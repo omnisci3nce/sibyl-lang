@@ -58,13 +58,5 @@ let run_file filename =
     (fun _ ->
       try Some (input_char channel) with End_of_file -> None)
     in
+    (* print_char (Stream.next stream); *)
     tokenise stream
-
-
-(* Run program *)
-let () = match Array.length Sys.argv with
-  | 0 -> run_prompt ()
-  | 1 -> 
-    let _ = run_file (Array.get Sys.argv 0) in
-    print_string "Hello"
-  | _ -> print_endline "Usage: paper [script]"; exit 64;

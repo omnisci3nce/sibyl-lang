@@ -1,18 +1,15 @@
 type token_type =
   (* single char tokens *)
-  LPAREN
-  | RPAREN
-  | LBRACE
-  | RBRACE
-  | COMMA
-  | DOT
-  | MINUS
-  | PLUS
+  LeftParen
+  | RightParen
+  | Dot
+  | Minus
+  | Plus
 
   (* Literals *)
   | Identifier
-  | STRING
-  | NUMBER
+  | String
+  | Number
 
   (* Keywords *)
   | LET
@@ -35,7 +32,7 @@ type lexer_context = {
   line: int;
 }
 
-let run a = ()
+let run _ = ()
 
 let run_prompt () =
   while true do
@@ -50,7 +47,7 @@ let tokenise (stream: char Stream.t)  =
   let tokens = ref [] in
   Stream.iter (fun c -> 
     match c with
-    | '(' -> tokens := [LPAREN] @ !tokens
+    | '(' -> tokens := [LeftParen] @ !tokens
     | _ -> raise (Err "I don't know how to handle this")
   ) stream;
   !tokens
@@ -58,14 +55,16 @@ let tokenise (stream: char Stream.t)  =
 let run_file filename =
   let channel = open_in filename in
   let stream = Stream.from
-    (fun line_count ->
-      try Some (input_char channel) with End_of_file -> None) in
-  tokenise stream;
-  ()
+    (fun _ ->
+      try Some (input_char channel) with End_of_file -> None)
+    in
+    tokenise stream
 
 
 (* Run program *)
 let () = match Array.length Sys.argv with
   | 0 -> run_prompt ()
-  | 1 -> run_file (Array.get Sys.argv 0)
+  | 1 -> 
+    let _ = run_file (Array.get Sys.argv 0) in
+    print_string "Hello"
   | _ -> print_endline "Usage: paper [script]"; exit 64;

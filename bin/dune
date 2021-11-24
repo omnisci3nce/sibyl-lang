@@ -1,0 +1,4 @@
+(executable
+ (public_name paper)
+ (name main)
+ (libraries paper))

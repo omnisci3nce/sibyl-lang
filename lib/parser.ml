@@ -40,7 +40,7 @@ let rec parse (tokens: token list) : expr =
   (* | _ :: [] -> Unit *)
   | _ -> Unit
 
-(* let testfile_expected =
+let testfile_expected =
   Assign (
     "a",
     Binary (
@@ -48,11 +48,11 @@ let rec parse (tokens: token list) : expr =
       Literal ("10", NumberLiteral 10),
       Literal ("10", NumberLiteral 10)
     )
-  ) *)
+  )
 
-(* let test_parse = 
+let test_parse = 
   let s = "let a = 10 + 10\n" in
   let ts = tokenise s in 
   let ast = parse ts in
   print_expr ast;
-  assert (ast = testfile_expected) *)
+  assert (ast = testfile_expected)

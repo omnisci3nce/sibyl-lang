@@ -14,7 +14,8 @@ let run_file filename =
   let source = filename |> read_whole_file in
   let tokens = tokenise source in
   List.iter print_token tokens;
-  let _ast = parse tokens in
+  let stmts = ref [] in
+  let _ast = parse stmts tokens in
   ()
 
 (* Run program *)

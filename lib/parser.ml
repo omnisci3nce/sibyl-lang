@@ -7,6 +7,7 @@ type expr =
   | Literal of literal
   | Assign of string * expr
   | Binary of token * expr * expr
+  | Variable of token
   | Grouping
   | Unit
 and literal = (string * literal_type)
@@ -24,23 +25,29 @@ let rec print_expr e =
   end
   | _ -> print_endline ""
 
-let rec parse (tokens: token list) : expr =
+let rec parse (statements: expr list ref) (tokens: token list) : expr =
   if List.length tokens = 0 then Unit else
   (* let t = List.nth tokens 0 in *)
   match tokens with
   | t :: rest when t.token_type = Let -> begin
     match rest with
-      | next :: _ when next.token_type = Identifier -> Assign (next.lexeme, (parse rest))
+      | next :: _ when next.token_type = Identifier -> 
+        let expr = Assign (next.lexeme, (parse (statements) rest)) in
+        statements := [expr] @ !statements;
+        expr
       | _ -> raise (Err "Expected identifier after 'let'")
     end
-  (* | t :: next :: rest when t.token_type = Let && next.token_type = Identifier -> Assign (next.lexeme, (parse rest)) *)
-  | a :: b :: c :: _ when a.token_type = Number && b.token_type = Plus && c.token_type = Number ->
-          Binary (b, Literal (a.lexeme, (Option.get a.literal)), Literal (c.lexeme, (Option.get c.literal)))
-  | _ :: rest -> parse rest
+  | a :: b :: c :: _ when b.token_type = Plus && a.token_type = Number -> begin
+    if a.token_type != c.token_type then raise (Err "type of left side of Plus operator must be the same as type of right side") else
+      let expr = Binary (b, Literal (a.lexeme, (Option.get a.literal)), Literal (c.lexeme, (Option.get c.literal))) in
+      statements := [expr] @ !statements;
+      expr
+  end
+  | _ :: rest -> parse (statements) rest
   (* | _ :: [] -> Unit *)
   | _ -> Unit
 
-let testfile_expected =
+let testfile_expected = [
   Assign (
     "a",
     Binary (
@@ -48,11 +55,22 @@ let testfile_expected =
       Literal ("10", NumberLiteral 10),
       Literal ("10", NumberLiteral 10)
     )
+  );
+  Assign (
+    "b",
+    Binary (
+      { token_type = Plus; lexeme = "+"; literal = None; location = { line = 1; column = 0}},
+      Variable ({token_type = Identifier; lexeme = "b"; literal = None; location = { line = 1; column = 0}}),
+      Literal ("20", NumberLiteral 20)
+    )
   )
+]
 
 let test_parse = 
-  let s = "let a = 10 + 10\n" in
+  let s = "let a = 10 + 10\n let b = a + 20\n" in
   let ts = tokenise s in 
-  let ast = parse ts in
-  print_expr ast;
-  assert (ast = testfile_expected)
+  let stmts = ref [] in
+  let _ast = parse stmts ts in (* list of top-most nodes *)
+  let prog = !stmts in
+  List.iter print_expr prog;
+  assert (!stmts = testfile_expected)

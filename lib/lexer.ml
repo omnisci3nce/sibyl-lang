@@ -17,6 +17,7 @@ type token_type =
   | EqualEqual
   | GreaterEqual
   | LesserEqual
+  | BangEqual
 
   (* Literals *)
   | Identifier
@@ -25,7 +26,7 @@ type token_type =
 
   (* Keywords *)
   | Let
-  | Constraint
+  | Constrain
 
   | EOF
 
@@ -71,7 +72,7 @@ let print_token (token: token): unit =
                 | _ -> "" 
                 end
     | Let -> "Let"
-    | Constraint -> "Constraint"
+    | Constrain -> "Constrain"
     | _ -> ""
   );
   print_newline ()
@@ -164,7 +165,7 @@ let scan_next ctx tokens =
     begin
     match indent_string with
     | "let" -> add_token Let "let" None tokens ctx.line ctx.start; new_ctx
-    | "constrain" -> add_token Constraint "constrain" None tokens ctx.line ctx.start; new_ctx
+    | "constrain" -> add_token Constrain "constrain" None tokens ctx.line ctx.start; new_ctx
     | _ -> add_token Identifier indent_string None tokens ctx.line ctx.start; new_ctx
     end
   | c when is_digit c ->

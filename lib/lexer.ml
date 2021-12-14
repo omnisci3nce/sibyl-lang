@@ -5,6 +5,16 @@ type token_type =
   | Dot
   | Minus
   | Plus
+  | Star
+  | Slash
+  | Equal
+  | GreaterThan
+  | LessThan
+
+  (* two char tokens *)
+  | EqualEqual
+  | GreaterEqual
+  | LesserEqual
 
   (* Literals *)
   | Identifier
@@ -14,7 +24,6 @@ type token_type =
   (* Keywords *)
   | Let
   | Constraint
-  | Module
 
   | EOF
 
@@ -32,18 +41,6 @@ type token = {
   token_type: token_type;
 }
 
-let print_token (token: token): unit =
-  print_string (
-    match token.token_type with
-    | LeftParen -> "LeftParen"
-    | RightParen -> "RightParen"
-    | Plus       -> "Plus"
-    | Number -> begin match token.literal with | Some NumberLiteral a -> Int.to_string a | _ -> "" end
-    | _ -> ""
-  );
-  print_newline ()
-
-
 type lexer_context = {
   source: string;
   start: int;   (* first character in the lexeme being scanned *)
@@ -51,16 +48,33 @@ type lexer_context = {
   line: int;
 }
 
+let print_token (token: token): unit =
+  print_string (
+    match token.token_type with
+    | LeftParen -> "LeftParen"
+    | RightParen -> "RightParen"
+    | Plus       -> "Plus"
+    | Equal       -> "Equal"
+    | EqualEqual       -> "EqualEqual"
+    | LessThan -> "LessThan"
+    | Star       -> "Star"
+    | Slash       -> "Slash"
+    | Identifier -> "Ident: " ^ token.lexeme
+    | Number -> begin match token.literal with 
+                | Some NumberLiteral a -> "NumberLiteral: " ^ Int.to_string a
+                | _ -> "" 
+                end
+    | String -> begin match token.literal with 
+                | Some StringLiteral a -> "StringLiteral: " ^ a
+                | _ -> "" 
+                end
+    | Let -> "Let"
+    | Constraint -> "Constraint"
+    | _ -> ""
+  );
+  print_newline ()
+
 let is_at_end ctx = ctx.current >= String.length ctx.source
-
-let run _ = ()
-
-let run_prompt () =
-  while true do
-    print_string "> ";
-    let input = read_line () in
-    run input;
-  done
 
 exception Err of string
 
@@ -69,22 +83,98 @@ let is_alpha c = let code = Char.code c in
   (code >= Char.code('A') && code <= Char.code('Z')) ||
   (code >= Char.code('a') && code <= Char.code('z'))
 
-let scan_indentifier s = s
+let is_digit c = let code = Char.code c in
+  code >= Char.code('0') && code <= Char.code('9')
 
-let scan_next ctx _tokens =
+let is_alpha_numeric c = is_alpha c || is_digit c 
+
+let match_next ctx c =
+  c = String.get ctx.source (ctx.current + 1)
+
+let peek ctx = String.get ctx.source (ctx.current + 1)
+let advance ctx = {
+  ctx with 
+  current = ctx.current + 1;
+}
+
+
+let scan_identifier ctx = 
+  let rec scan_until_end (ctx: lexer_context) (acc: string) : (lexer_context * string) =
+    let c = String.get ctx.source ctx.current in
+    if is_alpha_numeric (peek ctx) then
+      scan_until_end (advance ctx) (acc ^ Char.escaped c)
+    else (ctx, (acc ^ Char.escaped c)) in
+    
+  let output_ctx, output_acc = scan_until_end ctx "" in
+  (output_ctx, output_acc)
+
+let scan_number ctx = 
+  let rec scan_until_end ctx acc =
+    let c = String.get ctx.source ctx.current in
+    if is_digit (peek ctx) then
+      scan_until_end (advance ctx) (acc ^ Char.escaped c)
+    else (ctx, (acc ^ Char.escaped c)) in
+    
+  let output_ctx, output_acc = scan_until_end ctx "" in
+  (output_ctx, (int_of_string output_acc))
+
+let add_token ttype s lit tokens line col =
+  let new_token: token = {
+    lexeme = s;
+    literal = lit;
+    location = {
+      line; column = col
+    };
+    token_type = ttype;
+  } in
+  tokens := [new_token] @ !tokens
+
+
+
+let scan_next ctx tokens =
   let c = String.get ctx.source ctx.current in
   (* print_char c; print_newline (); *)
   match c with
-  | '(' -> print_string "LeftParen"; ctx
-  | ')' -> print_string "RightParen"; ctx
-  | '+' -> print_string "Plus"; ctx
-  | '*' -> print_string "Multiply"; ctx
-  | c when is_alpha c -> let _s = scan_indentifier "let" in ctx
-  | _ -> ctx
+  | '(' -> add_token LeftParen "(" None tokens ctx.line ctx.start; ctx
+  | ')' -> add_token RightParen ")" None tokens ctx.line ctx.start; ctx
+  | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
+  | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
+  | '=' -> if match_next ctx '=' then
+            add_token EqualEqual "=" None tokens ctx.line ctx.start else
+            add_token Equal "=" None tokens ctx.line ctx.start; ctx
+  | '<' -> if match_next ctx '=' then
+              add_token LesserEqual "<=" None tokens ctx.line ctx.start else
+              add_token LessThan "<" None tokens ctx.line ctx.start; ctx
+  | '/' -> 
+    let rec comment_out c =
+      if is_at_end c || Char.equal (peek c) '\n' then
+        c
+      else
+        c |> advance |> comment_out in
+    if (peek ctx) = '/' then
+      let new_ctx = comment_out ctx in
+      { new_ctx with line = new_ctx.line + 1 }
+     else
+      let _ = add_token Slash "/" None tokens ctx.line ctx.start in
+      ctx
+  | c when is_alpha c -> 
+    let new_ctx, indent_string = scan_identifier ctx in
+    begin
+    match indent_string with
+    | "let" -> add_token Let "let" None tokens ctx.line ctx.start; new_ctx
+    | "constrain" -> add_token Constraint "constrain" None tokens ctx.line ctx.start; new_ctx
+    | _ -> add_token Identifier indent_string None tokens ctx.line ctx.start; new_ctx
+    end
+  | c when is_digit c ->
+    let new_ctx, num = scan_number ctx in
+    add_token Number (string_of_int num) (Some (NumberLiteral num)) tokens ctx.line ctx.start; new_ctx
+  | ' ' -> ctx
+  | '\n' -> { ctx with line = ctx.line + 1 }
+  | _ -> raise (Err ("Unknown character: " ^ (Char.escaped c) ^ " on line " ^ (string_of_int ctx.line)))
 
 let scan_identifier x = x
 
-let advance ctx = { ctx with current = ctx.current + 1 }
+
 
 let tokenise (source: string): token list =
   let ctx: lexer_context = {
@@ -94,18 +184,17 @@ let tokenise (source: string): token list =
     line = 0;
   } in
   let tokens = ref [] in
-  let rec loop ctx =
+  let rec loop ctx = (* loop until we're at the end of the source code *)
     if is_at_end ctx then
       ctx
     else
-      let _t = scan_next ctx tokens in
-      loop (advance ctx) in
-    
+      let t = scan_next ctx tokens in
+      loop (advance t) in
 
   let _final = loop ctx in
-
-
-  !tokens
+  (* let ordered_tokens = List.rev !tokens in *)
+  (* List.iter print_token ordered_tokens; *)
+  List.rev !tokens
 
 let read_whole_file filename =
   let channel = open_in filename in

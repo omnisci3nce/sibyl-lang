@@ -1,0 +1,11 @@
+(5 + 5)
+
+let a = 5
+let b = 10
+
+// introduce 
+constrain c < 50
+let c = a * b
+// should fail
+
+let d = c / b

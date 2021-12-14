@@ -201,6 +201,3 @@ let read_whole_file filename =
   let s = really_input_string channel (in_channel_length channel) in
   close_in channel;
   s
-
-let run_file filename =
-  filename |> read_whole_file |> tokenise |> List.iter print_token

@@ -1,4 +1,5 @@
 open Paper.Lexer
+open Paper.Parser
 
 let run _ = ()
 
@@ -9,9 +10,16 @@ let run_prompt () =
     run input;
   done
 
+let run_file filename =
+  let source = filename |> read_whole_file in
+  let tokens = tokenise source in
+  List.iter print_token tokens;
+  let _ast = parse tokens in
+  ()
+
 (* Run program *)
 let () = match Array.length Sys.argv with
-| 1 -> run_prompt ()
+| 1 -> test_parse
 | 2 -> 
   run_file (Array.get Sys.argv 1)
 | _ -> print_endline "Usage: paper [script]"; exit 64;

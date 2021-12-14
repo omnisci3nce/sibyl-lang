@@ -5,72 +5,69 @@ open Lexer
 (* Types *)
 type expr =
   | Literal of literal
-  | Assign of string * expr
-  | Binary of token * expr * expr
-  | Variable of token
-  | Grouping
+  | Assign of { identifier: string; expr: expr }
+  | Binary of { left_expr: expr; operator: token; right_expr: expr}
+  | Unary of { operator: token; expr: expr }
   | Unit
 and literal = (string * literal_type)
 
+type statement =
+  | Expression of expr
+  | Print of expr
+
+type program = statement list
+
+let rec string_of_expr e = match e with
+    | Literal l -> begin 
+      match l with
+      | (_s, NumberLiteral i) -> "num_literal " ^ (string_of_int i)
+      | _ -> ""
+    end
+    | Assign _ -> "assign"
+    | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
+    | _ -> "unknown expr"
+
+let print_stmt s = match s with
+  | Expression e ->
+    begin
+    match e with
+    | Assign a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr)
+    | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
+    | _ -> print_string "Unknown"
+    end
+  | _ -> print_endline "dunno"
+
+
+
 let at_end t = List.length t = 0
 
-let rec print_expr e =
-  match e with
-  | Assign (s, e) -> print_string ("Assign \"" ^ s ^ "\" to "); print_expr e
-  | Binary (t, a, b) -> print_string "BinaryExpr "; print_string "("; print_token t; print_expr a; print_endline ","; print_expr b; print_newline (); print_endline ")"
-  | Literal (_s, l) -> begin 
-    match l with
-    | NumberLiteral x -> print_string "NumberLiteral: "; print_int x
-    | _ -> raise (Err "havent implemented non number literals yet")
-  end
-  | _ -> print_endline ""
+let parse_expression tokens = match tokens with
+  | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
+    rest, Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
+  | _ -> raise (Err "??")
 
-let rec parse (statements: expr list ref) (tokens: token list) : expr =
-  if List.length tokens = 0 then Unit else
-  (* let t = List.nth tokens 0 in *)
-  match tokens with
-  | t :: rest when t.token_type = Let -> begin
-    match rest with
-      | next :: _ when next.token_type = Identifier -> 
-        let expr = Assign (next.lexeme, (parse (statements) rest)) in
-        statements := [expr] @ !statements;
-        expr
-      | _ -> raise (Err "Expected identifier after 'let'")
-    end
-  | a :: b :: c :: _ when b.token_type = Plus && a.token_type = Number -> begin
-    if a.token_type != c.token_type then raise (Err "type of left side of Plus operator must be the same as type of right side") else
-      let expr = Binary (b, Literal (a.lexeme, (Option.get a.literal)), Literal (c.lexeme, (Option.get c.literal))) in
-      statements := [expr] @ !statements;
-      expr
-  end
-  | _ :: rest -> parse (statements) rest
-  (* | _ :: [] -> Unit *)
-  | _ -> Unit
+let parse_statement tokens = match tokens with
+  (* starts a let *)
+  | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
+    let remaining_t, ex = parse_expression rest in
+      Expression (
+        Assign { identifier = lexeme; expr = ex}), remaining_t
+  (* If its not a declaration, we assume its an expression *)
+  | _ -> Expression Unit, []
 
-let testfile_expected = [
-  Assign (
-    "a",
-    Binary (
-      { token_type = Plus; lexeme = "+"; literal = None; location = { line = 0; column = 0}},
-      Literal ("10", NumberLiteral 10),
-      Literal ("10", NumberLiteral 10)
-    )
-  );
-  Assign (
-    "b",
-    Binary (
-      { token_type = Plus; lexeme = "+"; literal = None; location = { line = 1; column = 0}},
-      Variable ({token_type = Identifier; lexeme = "b"; literal = None; location = { line = 1; column = 0}}),
-      Literal ("20", NumberLiteral 20)
-    )
-  )
-]
+let rec loop (acc: statement list) (ts: token list) =
+  match ts with
+  | [] -> acc
+  | ts -> let stmt, remaining_tokens = parse_statement ts in
+    loop (stmt :: acc) remaining_tokens
+let parse (tokens: token list) : statement list =
+  let stmts = loop [] tokens in
+  List.rev stmts
 
 let test_parse = 
-  let s = "let a = 10 + 10\n let b = a + 20\n" in
-  let ts = tokenise s in 
-  let stmts = ref [] in
-  let _ast = parse stmts ts in (* list of top-most nodes *)
-  let prog = !stmts in
-  List.iter print_expr prog;
-  assert (!stmts = testfile_expected)
+  let s = "let a = 10 + 10\n" in
+  (* let s = "let a = 10 + 10\n let b = a + 20\n" in *)
+  let tokens = tokenise s in 
+  let ast = parse tokens in
+  List.iter print_stmt ast;
+  ()

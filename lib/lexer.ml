@@ -141,6 +141,7 @@ let scan_next ctx tokens =
   | '(' -> add_token LeftParen "(" None tokens ctx.line ctx.start; ctx
   | ')' -> add_token RightParen ")" None tokens ctx.line ctx.start; ctx
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
+  | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
   | '=' -> if match_next ctx '=' then
             add_token EqualEqual "=" None tokens ctx.line ctx.start else

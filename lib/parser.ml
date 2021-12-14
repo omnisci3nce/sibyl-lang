@@ -44,7 +44,7 @@ let at_end t = List.length t = 0
 let parse_expression tokens = match tokens with
   | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
     rest, Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
-  | _ -> raise (Err "??")
+  | _ -> raise (Err "dunno how to parse this expression")
 
 let parse_statement tokens = match tokens with
   (* starts a let *)
@@ -65,9 +65,11 @@ let parse (tokens: token list) : statement list =
   List.rev stmts
 
 let test_parse = 
-  let s = "let a = 10 + 10\n" in
-  (* let s = "let a = 10 + 10\n let b = a + 20\n" in *)
-  let tokens = tokenise s in 
+  let _s1 = "let a = 10 + 10\n" in
+  let s2 = "let a = 10 + 10\n let b = 10 + 20\n" in
+  let _s3 = "let a = 10 + 10\n let b = a + 20\n" in
+  let tokens = tokenise s2 in 
   let ast = parse tokens in
+  print_string "Statements: "; print_int (List.length ast); print_newline ();
   List.iter print_stmt ast;
   ()

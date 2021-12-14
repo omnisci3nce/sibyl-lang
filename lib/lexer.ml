@@ -1,3 +1,5 @@
+(* Convert a source code file into tokens *)
+
 type token_type =
   (* single char tokens *)
   LeftParen

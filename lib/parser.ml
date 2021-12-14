@@ -1,3 +1,5 @@
+(* Parse tokens from the lexer for syntax correctness and convert to an abstract syntax tree *)
+
 open Lexer
 
 (* Types *)
@@ -10,7 +12,6 @@ type expr =
 and literal = (string * literal_type)
 
 let at_end t = List.length t = 0
-
 
 let rec print_expr e =
   match e with
@@ -27,14 +28,19 @@ let rec parse (tokens: token list) : expr =
   if List.length tokens = 0 then Unit else
   (* let t = List.nth tokens 0 in *)
   match tokens with
-  | t :: next :: rest when t.token_type = Let && next.token_type = Identifier -> Assign (next.lexeme, (parse rest))
+  | t :: rest when t.token_type = Let -> begin
+    match rest with
+      | next :: _ when next.token_type = Identifier -> Assign (next.lexeme, (parse rest))
+      | _ -> raise (Err "Expected identifier after 'let'")
+    end
+  (* | t :: next :: rest when t.token_type = Let && next.token_type = Identifier -> Assign (next.lexeme, (parse rest)) *)
   | a :: b :: c :: _ when a.token_type = Number && b.token_type = Plus && c.token_type = Number ->
           Binary (b, Literal (a.lexeme, (Option.get a.literal)), Literal (c.lexeme, (Option.get c.literal)))
   | _ :: rest -> parse rest
   (* | _ :: [] -> Unit *)
   | _ -> Unit
 
-let testfile_expected =
+(* let testfile_expected =
   Assign (
     "a",
     Binary (
@@ -42,11 +48,11 @@ let testfile_expected =
       Literal ("10", NumberLiteral 10),
       Literal ("10", NumberLiteral 10)
     )
-  )
+  ) *)
 
-let test_parse = 
+(* let test_parse = 
   let s = "let a = 10 + 10\n" in
   let ts = tokenise s in 
   let ast = parse ts in
   print_expr ast;
-  assert (ast = testfile_expected)
+  assert (ast = testfile_expected) *)

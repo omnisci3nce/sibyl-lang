@@ -1,2 +1,3 @@
 (test
- (name paper))
+ (name paper)
+ (libraries paper alcotest))

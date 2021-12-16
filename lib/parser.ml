@@ -64,11 +64,11 @@ let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in
   List.rev stmts
 
-let test_parse = 
-  let _s1 = "let a = 10 + 10\n" in
-  let s2 = "let a = 10 + 10\n let b = 10 + 20\n" in
+let test_parse () = 
+  let s1 = "let a = 10 + 10\n" in
+  let _s2 = "let a = 10 + 10\n let b = 10 + 20\n" in
   let _s3 = "let a = 10 + 10\n let b = a + 20\n" in
-  let tokens = tokenise s2 in 
+  let tokens = tokenise s1 in 
   let ast = parse tokens in
   print_string "Statements: "; print_int (List.length ast); print_newline ();
   List.iter print_stmt ast;

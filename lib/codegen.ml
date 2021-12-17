@@ -26,6 +26,21 @@ let generate_exit =
         mov     X16, #1     // Service command code 1 terminates this program
         svc     0           // Call MacOS to terminate the program
   "
+type generator = {
+  variables: (string, int) Hashtbl.t;
+  filepath: string;
+  channel: out_channel
+}
+
+let new_generator filename =
+  let filepath = (Filename.chop_extension filename) ^ ".s" in
+  {
+    variables = Hashtbl.create 100;
+    filepath;
+    channel = open_out filepath
+  }
+
+let close_generator generator = close_out generator.channel
 
 let codegen (ast: statement list) : string = 
   let _stmt = List.nth ast 0 in

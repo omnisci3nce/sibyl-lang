@@ -94,10 +94,10 @@ let gen_from_stmt gen (ast: statement) = match ast with
         let value_calculation = gen_from_expr gen assignment.expr in
         (* Allocate the variable to keep track of it *)
         let _offset = alloc_var assignment.identifier gen in
-        value_calculation ^ "  mov [rsp+0], rax ; move result to first byte on the stack\n" ^ gen_print
+        value_calculation ^ "  mov [rsp+0], rax ; move result to first byte on the stack\n"
       | _ -> ""
     end
-  | Print _e -> ""
+  | Print _e -> gen_print
 
 let codegen gen (ast: statement list) : string = 
   let _stmt = List.nth ast 0 in
@@ -114,9 +114,10 @@ let codegen gen (ast: statement list) : string =
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 10\n" in
+  let s = "let a = 10 + 10\nprint 10\n" in
   let gen = new_generator "output.s" in
   let tokens = tokenise s in List.iter print_token tokens;
+  let ast = tokenise s |> parse in List.iter print_stmt ast;
   let asm = s |> tokenise |> parse |> codegen gen in
   (* print_endline asm; *)
   let ch = open_out "output.s" in

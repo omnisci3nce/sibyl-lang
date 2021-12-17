@@ -38,7 +38,7 @@ let print_stmt s = match s with
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
     | _ -> print_string "Unknown"
     end
-  | _ -> print_endline "dunno"
+  | Print _ -> print_endline "Print"
 
 
 
@@ -47,6 +47,7 @@ let at_end t = List.length t = 0
 let parse_expression tokens = match tokens with
   | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
     rest, Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
+    | n1 :: rest when n1.token_type = Number -> rest, Literal (n1.lexeme, Option.get n1.literal)
   | _ -> raise (Err "dunno how to parse this expression")
 
 let parse_statement tokens = match tokens with
@@ -55,6 +56,11 @@ let parse_statement tokens = match tokens with
     let remaining_t, ex = parse_expression rest in
       Expression (
         Assign { identifier = lexeme; expr = ex}), remaining_t
+  
+  | { token_type = Identifier; lexeme; _ } :: rest when lexeme = "print" ->
+    let remaining_t, ex = parse_expression rest in
+    Print ex, remaining_t
+
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []
 

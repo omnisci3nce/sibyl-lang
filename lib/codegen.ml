@@ -116,7 +116,8 @@ let codegen gen (ast: statement list) : string =
 let test_gen () = 
   let s = "let a = 10 + 10\n" in
   let gen = new_generator "output.s" in
+  let tokens = tokenise s in List.iter print_token tokens;
   let asm = s |> tokenise |> parse |> codegen gen in
-  print_endline asm;
+  (* print_endline asm; *)
   let ch = open_out "output.s" in
   Printf.fprintf ch "%s" asm

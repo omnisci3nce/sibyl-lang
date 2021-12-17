@@ -17,6 +17,9 @@ type statement =
 
 type program = statement list
 
+type value =
+  | Int
+
 let rec string_of_expr e = match e with
     | Literal l -> begin 
       match l with

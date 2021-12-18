@@ -16,3 +16,6 @@ let compile source =
 ```
 expressed in one line as  
 `tokenise -> parse -> type -> lower -> optimise -> codegen`
+
+Stages could be called
+`Lexing -> Parsing -> Semantic Analysis -> Lowering / Desugaring -> Backend Optimisation -> Code Generation`

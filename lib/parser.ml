@@ -9,6 +9,7 @@ type expr =
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
   | Unit
+  | Var of string
 and literal = (string * literal_type)
 
 type statement =
@@ -38,7 +39,10 @@ let print_stmt s = match s with
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
     | _ -> print_string "Unknown"
     end
-  | _ -> print_endline "dunno"
+  | Print e -> begin match e with
+    | Var v -> print_endline ("Print " ^ v)
+    | _ -> print_endline "dunno"
+  end
 
 
 
@@ -55,6 +59,8 @@ let parse_statement tokens = match tokens with
     let remaining_t, ex = parse_expression rest in
       Expression (
         Assign { identifier = lexeme; expr = ex}), remaining_t
+  | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
+    Print (Var v.lexeme), rest
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []
 

@@ -10,6 +10,7 @@ type expr =
   | Unary of { operator: token; expr: expr }
   | Var of string
   | If of expr * expr * expr
+  | Unit
 and literal = (string * literal_type)
 
 type statement =
@@ -27,7 +28,7 @@ let rec string_of_expr e = match e with
       | (_s, NumberLiteral i) -> "num_literal " ^ (string_of_int i)
       | _ -> ""
     end
-    | Assign _ -> "assign"
+    | Let _ -> "let"
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | _ -> "unknown expr"
 
@@ -35,7 +36,7 @@ let print_stmt s = match s with
   | Expression e ->
     begin
     match e with
-    | Assign a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr)
+    | Let a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr)
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
     | _ -> print_string "Unknown"
     end
@@ -59,7 +60,7 @@ let parse_statement tokens = match tokens with
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let remaining_t, ex = parse_expression rest in
       Expression (
-        Assign { identifier = lexeme; expr = ex}), remaining_t
+        Let { identifier = lexeme; expr = ex}), remaining_t
   | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest
   (* If its not a declaration, we assume its an expression *)

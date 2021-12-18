@@ -106,7 +106,7 @@ let gen_from_stmt gen (ast: statement) = match ast with
   | Expression e ->
     begin
       match e with
-      | Assign assignment ->
+      | Let assignment ->
         (* Check if var has already been allocated *)
         let offset = if is_alloc_var gen assignment.identifier then
           Hashtbl.find gen.variables assignment.identifier
@@ -139,9 +139,11 @@ let codegen gen (ast: statement list) : string =
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 10\n let b = 20 + 20\n" in
-  let gen = new_generator "output.s" in
-  let asm = s |> tokenise |> parse |> codegen gen in (* tokenise -> parse -> generate assembly *)
-  print_endline asm;
-  let ch = open_out "output.s" in
-  Printf.fprintf ch "%s" asm (* write assembly to file *) 
+  let s = "let a = 10 + 10 + 10\n" in
+  let _gen = new_generator "output.s" in
+  let t = s |> tokenise in List.iter print_token t;
+  let asm = s |> tokenise |> parse |> Optimise.optimise in (* |> codegen gen in (* tokenise -> parse -> generate assembly *) *)
+  List.iter print_stmt asm
+  (* print_endline asm; *)
+  (* let ch = open_out "output.s" in *)
+  (* Printf.fprintf ch "%s" asm write assembly to file  *)

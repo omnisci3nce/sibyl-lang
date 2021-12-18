@@ -139,13 +139,16 @@ let codegen gen (ast: statement list) : string =
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 10\nlet b = 20 + 20\n" in
-  let _gen = new_generator "output.s" in
-  print_endline "Parsed:";
+  let s = "let a = 10 + 10 + 10\n" in
+  let t = s |> tokenise in List.iter print_token t;
+  let gen = new_generator "output.s" in
+  (* print_endline "Parsed:"; *)
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast;
-  let asm = s |> tokenise |> parse |> Optimise.optimise in (* |> codegen gen in (* tokenise -> parse -> generate assembly *) *)
-  print_endline "With constant folding applied:";
-  List.iter print_stmt asm
-  (* print_endline asm; *)
+  let non_opt_asm = s |> tokenise |> parse |> Optimise.optimise in (* |> codegen gen in (* tokenise -> parse -> generate assembly *) *)
+  let _asm = s |> tokenise |> parse |> Optimise.optimise |> codegen gen in (* tokenise -> parse -> generate assembly *)
+  (* print_endline "With constant folding applied:"; *)
+  List.iter print_stmt non_opt_asm;
+  print_string "\nInstructions: "; print_int gen.instruction_count; print_newline ();
+  (* print_endline asm *)
   (* let ch = open_out "output.s" in *)
   (* Printf.fprintf ch "%s" asm write assembly to file  *)

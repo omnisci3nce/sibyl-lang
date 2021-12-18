@@ -26,6 +26,8 @@ type token_type =
 
   (* Keywords *)
   | Let
+  | True
+  | False
   | Constrain
 
   | EOF
@@ -43,8 +45,10 @@ let keywords = [
   Identifier, "Ident";
   Number, "Number";
   String, "String";
-
+  True, "True";
+  False, "False"
 ]
+let str_of_token_type t = List.assoc t keywords 
 
 type literal_type = NumberLiteral of int | StringLiteral of string
 
@@ -162,6 +166,8 @@ let scan_next ctx tokens =
     match indent_string with
     | "let" -> add_token Let "let" None tokens ctx.line ctx.start; new_ctx
     | "constrain" -> add_token Constrain "constrain" None tokens ctx.line ctx.start; new_ctx
+    | "true" -> add_token True "constrain" None tokens ctx.line ctx.start; new_ctx
+    | "false" -> add_token False (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | _ -> add_token Identifier indent_string None tokens ctx.line ctx.start; new_ctx
     end
   | c when is_digit c ->

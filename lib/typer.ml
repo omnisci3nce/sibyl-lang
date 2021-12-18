@@ -1,13 +1,18 @@
-let type_tree _stmts = "" 
-
+type e
 
 type constant =
   | ConstInt
+
+type expr =
+  | Let 
+  | Const of constant
 
 type typ =
   | TInt
   | TBool
 
-(* type typed_tree =  *)
+type typed_expr = { typ: typ; expr: expr }
 
-(* let to_typed (prog: Parser.program) : typed_tree =  "" *)
+type typed_tree = typed_expr
+
+let to_typed (_prog: Parser.program) : typed_tree = { typ = TInt; expr = Let }

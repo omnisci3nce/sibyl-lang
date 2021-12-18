@@ -5,11 +5,11 @@ open Lexer
 (* Types *)
 type expr =
   | Literal of literal
-  | Assign of { identifier: string; expr: expr }
+  | Let of { identifier: string; expr: expr }
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
-  | Unit
   | Var of string
+  | If of expr * expr * expr
 and literal = (string * literal_type)
 
 type statement =

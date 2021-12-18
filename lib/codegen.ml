@@ -139,10 +139,12 @@ let codegen gen (ast: statement list) : string =
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 10 + 10\n" in
+  let s = "let a = 10 + 10\nlet b = 20 + 20\n" in
   let _gen = new_generator "output.s" in
-  let t = s |> tokenise in List.iter print_token t;
+  print_endline "Parsed:";
+  let ast = s |> tokenise |> parse  in List.iter print_stmt ast;
   let asm = s |> tokenise |> parse |> Optimise.optimise in (* |> codegen gen in (* tokenise -> parse -> generate assembly *) *)
+  print_endline "With constant folding applied:";
   List.iter print_stmt asm
   (* print_endline asm; *)
   (* let ch = open_out "output.s" in *)

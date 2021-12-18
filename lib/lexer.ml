@@ -30,6 +30,22 @@ type token_type =
 
   | EOF
 
+let keywords = [
+  LeftParen, "LeftParen";
+  RightParen, "RightParen";
+  Plus, "Plus";
+  Minus, "Minus";
+  Dot, "Dot";
+  Star, "Star";
+  Slash, "Slash";
+  Equal, "Equal";
+  Let, "Let";
+  Identifier, "Ident";
+  Number, "Number";
+  String, "String";
+
+]
+
 type literal_type = NumberLiteral of int | StringLiteral of string
 
 type location = {
@@ -52,30 +68,9 @@ type lexer_context = {
 }
 
 let print_token (token: token): unit =
-  print_string (
-    match token.token_type with
-    | LeftParen -> "LeftParen"
-    | RightParen -> "RightParen"
-    | Plus       -> "Plus"
-    | Equal       -> "Equal"
-    | EqualEqual       -> "EqualEqual"
-    | LessThan -> "LessThan"
-    | Star       -> "Star"
-    | Slash       -> "Slash"
-    | Identifier -> "Ident: " ^ token.lexeme
-    | Number -> begin match token.literal with 
-                | Some NumberLiteral a -> "NumberLiteral: " ^ Int.to_string a
-                | _ -> "" 
-                end
-    | String -> begin match token.literal with 
-                | Some StringLiteral a -> "StringLiteral: " ^ a
-                | _ -> "" 
-                end
-    | Let -> "Let"
-    | Constrain -> "Constrain"
-    | _ -> ""
-  );
-  print_newline ()
+  match List.assoc_opt token.token_type keywords with
+  | Some s -> print_string s; print_newline ()
+  | None -> ()
 
 let is_at_end ctx = ctx.current >= String.length ctx.source
 

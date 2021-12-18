@@ -51,6 +51,7 @@ let at_end t = List.length t = 0
 let parse_expression tokens = match tokens with
   | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
     rest, Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
+    | n1 :: rest when n1.token_type = Number -> rest, Literal (n1.lexeme, Option.get n1.literal)
   | _ -> raise (Err "dunno how to parse this expression")
 
 let parse_statement tokens = match tokens with

@@ -100,6 +100,16 @@ let gen_plus_op a b gen =
   in
   (name, offset)
 
+let gen_mult_op a b gen =
+  let name, offset = alloc_temp_var gen in
+  let _ = gen
+  |> emit ("mov rax, " ^  a)
+  |> emit ("mov rdx, " ^ b)
+  |> emit "mul rdx ; output of addition is now in rax"
+  |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
+  in
+  (name, offset)
+
 let gen_print var_name gen = 
   let offset = Hashtbl.find gen.variables var_name in
 emit ("
@@ -126,14 +136,28 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
         let (new_gen, temp_name) = gen_from_expr gen e in
         let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
         new_gen, name
+      | e, Literal (_, NumberLiteral a) ->
+        let (new_gen, temp_name) = gen_from_expr gen e in
+        let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
+        new_gen, name
+      
       (* Or *)
       (* Expr + Num *)
      
       | _ -> failwith "Cant add these types"
     end
-    | _ -> gen, ""
+    | t when t.token_type = Star -> begin
+      match b.left_expr, b.right_expr with
+      (* Num + Num *)
+      | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
+        let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
+        (* print_hashtbl gen.variables; *)
+        gen, name
+        | _ -> failwith "Cant mutliply these types"
+    end
+    | _ -> failwith "todo : implement this operator for binary expression"
   end
-  | _ -> gen, ""
+  | _ -> gen, "todo: handle this expression in generator"
 
 let generate_copy_ident target name gen = 
   gen
@@ -176,12 +200,12 @@ let codegen gen (ast: statement list) : string =
       inner next rest
   in
   let final = inner gen ast in
-  let final = gen_print "a" final in
+  let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
   let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 10 + 10\n" in
+  let s = "let a = 10 + 5 * 10\n" in
   let t = s |> tokenise in List.iter print_token t;
   let gen = new_generator "output.s" in
   print_endline "Parsed:";

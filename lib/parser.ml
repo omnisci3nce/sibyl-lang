@@ -50,6 +50,14 @@ let print_stmt s = match s with
 
 let at_end t = List.length t = 0
 
+let match_next tokens (token_types: token_type list) = match tokens with
+  | [] -> None
+  | hd :: _ -> begin
+    match List.find_opt (fun tt -> tt = hd.token_type) token_types with
+    | Some _ -> Some hd
+    | _ -> None
+  end
+
 let rec parse_primary tokens =
   match tokens with
   | h :: r  when h.token_type = Number -> Literal (h.lexeme, Option.get h.literal), r
@@ -58,24 +66,20 @@ let rec parse_primary tokens =
   | _ -> failwith " stuck"
 
 and parse_factor tokens = 
-let (expr, remaining) = parse_primary tokens in
-
-  match remaining with
-  | op :: rest when op.token_type = Star ->
-    let (ex, rem) = parse_primary rest in
-    Binary { left_expr = expr; operator = op; right_expr = ex }, rem
+  let (expr, remaining) = parse_primary tokens in
+  match match_next remaining [Star; Slash] with
+  | Some t ->
+    let (ex, rem) = parse_primary (List.tl remaining) in
+    Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> (expr, remaining)
     
 and parse_term tokens = 
   let (expr, remaining) = parse_factor tokens in
-  match remaining with
-  | op :: rest when op.token_type = Plus ->
-    let ex, _rem = parse_term rest in
-    Binary { left_expr = expr; operator = op; right_expr = ex }, remaining
-  | op :: rest -> 
-    let ex, _rem = parse_term rest in
-    Binary { left_expr = expr; operator = op; right_expr = ex }, remaining
-| _ -> expr, remaining
+  match match_next remaining [Plus; Minus] with
+  | Some t ->
+      let ex, _rem = parse_term (List.tl remaining) in
+      Binary { left_expr = expr; operator = t; right_expr = ex }, remaining
+  | _ -> expr, remaining
 
 and parse_expression tokens = match tokens with
   | h :: rest when h.token_type = Let -> begin
@@ -112,7 +116,7 @@ let rec loop (acc: statement list) (ts: token list) =
   List.rev stmts
 
 let test_parse () = 
-  let s1 = "let a = 10 + 10 * 10\n" in
+  let s1 = "let a = 10 + 10 + 10\n" in
   let tokens = tokenise s1 in 
   let _ast = parse tokens in
   ()

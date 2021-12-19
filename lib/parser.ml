@@ -105,8 +105,7 @@ let rec loop (acc: statement list) (ts: token list) =
   match ts with
   | [] -> acc
   | ts -> let stmt, remaining_tokens = parse_statement ts in
-  print_string "remaining tokens: "; 
-  List.iter print_token remaining_tokens; print_newline ();
+  (* List.iter print_token remaining_tokens; print_newline (); *)
     loop (stmt :: acc) remaining_tokens
   let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in

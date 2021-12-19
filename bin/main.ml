@@ -28,8 +28,16 @@ let run_file filename =
   ()
 
 (* Run program *)
-let () = match Array.length Sys.argv with
-| 1 -> test_gen ()
-| 2 -> 
-  run_file (Array.get Sys.argv 1)
-| _ -> print_endline "Usage: paper [script]"; exit 64;
+let () =
+  Logs.set_level @@ Some Logs.Debug;
+  Logs.set_reporter @@ Logs.format_reporter ();
+  (* Logs.info (fun m -> m ~header:"START" ?tags:None "Starting main");
+  Logs.warn (fun m -> m "Hey be warned by %d." 7);
+  Logs.err (fun m -> m "Hey be errored.");
+  Logs.debug (fun m -> m "Would you mind to be debugged a bit ?");
+  Logs.app (fun m -> m "This is for the application console or stdout."); *)
+  match Array.length Sys.argv with
+  | 1 -> test_gen ()
+  | 2 -> 
+    run_file (Array.get Sys.argv 1)
+  | _ -> print_endline "Usage: paper [script]"; exit 64;

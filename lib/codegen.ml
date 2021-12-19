@@ -2,7 +2,7 @@
 
 open Lexer
 open Parser
-open Helpers
+(* open Helpers *)
 let _STACK_SIZE = 1024
 
 let generate_begin =
@@ -78,6 +78,7 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
                                           failwith "Var already exists!!!"
                                         else
                                           let available = empty_var g 1 in
+                                          Logs.debug (fun m -> m "[Codegen] Allocating variable '%s' at offset %d" var_name available);
                                           Hashtbl.add g.variables var_name available; available
 let temp_v_counter = ref 1
 let alloc_temp_var g = 
@@ -86,11 +87,11 @@ let alloc_temp_var g =
     failwith "Var already exists!!!"
   else let available = empty_var g 1 in
     temp_v_counter := !temp_v_counter + 1;
+    Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
     Hashtbl.add g.variables var_name available; (var_name, available)
       
 let gen_plus_op a b gen =
   let name, offset = alloc_temp_var gen in
-  print_string "HERE: "; print_string name; print_newline ();
   let _ = gen
   |> emit ("mov rax, " ^  a)
   |> emit ("mov rcx, " ^ b)
@@ -118,7 +119,7 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
       (* Num + Num *)
       | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
         let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
-        print_hashtbl gen.variables;
+        (* print_hashtbl gen.variables; *)
         gen, name
       (* Num + Expr *)
       | Literal (_, NumberLiteral a), e ->
@@ -153,7 +154,7 @@ let gen_from_stmt gen (ast: statement) = match ast with
         in
         (* Compute what we want to store in it *)
         let (new_gen, name) = gen_from_expr gen assignment.expr in
-        print_hashtbl gen.variables;
+        (* print_hashtbl gen.variables; *)
         (* let _ = generate_copy_ident assignment.identifier name gen in  *)
         (* let _offset2 = Hashtbl.find new_gen.variables name in *)
         let new_gen = generate_copy_ident assignment.identifier name new_gen in

@@ -93,7 +93,7 @@ let alloc_temp_var g =
 let gen_plus_op a b gen =
   let name, offset = alloc_temp_var gen in
   let _ = gen
-  |> emit ("mov rax, " ^  a)
+  |> emit ("mov rax, " ^ a)
   |> emit ("mov rcx, " ^ b)
   |> emit "add rax, rcx ; output of addition is now in rax"
   |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
@@ -209,8 +209,9 @@ let test_gen () =
   let t = s |> tokenise in List.iter print_token t;
   let gen = new_generator "output.s" in
   print_endline "Parsed:";
-  let ast = s |> tokenise |> parse  in List.iter print_stmt ast;
+  let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
   print_string "Num temp vars: "; print_int !temp_v_counter; print_newline ();
   let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
+  print_string "Instruction count: "; print_int gen.instruction_count; print_newline ();
   let ch = open_out "output.s" in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

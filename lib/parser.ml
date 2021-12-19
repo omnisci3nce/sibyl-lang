@@ -11,16 +11,18 @@ type expr =
   | Var of string
   | If of expr * expr * expr
   | Unit
-and literal = (string * literal_type)
+  and literal = (string * literal_type)
 
-type statement =
-  | Expression of expr
-  | Print of expr
-
-type program = statement list
-
-type value =
-  | Int
+  type statement =
+    | Expression of expr
+    | Print of expr
+    
+    type program = statement list
+    
+    type value =
+      | Int
+      
+exception Syntax_error of string
 
 let rec string_of_expr e = match e with
     | Literal l -> begin 
@@ -46,25 +48,16 @@ let print_stmt s = match s with
     | _ -> print_endline "dunno"
   end
 
-
-
 let at_end t = List.length t = 0
 
 let rec parse_primary tokens =
-  (* print_string "primary: ";List.iter print_token tokens; print_newline (); *)
-
-  (* let _ = print_string "parse primary\n" in
-  let _ =  List.iter print_token tokens in *)
   match tokens with
   | h :: r  when h.token_type = Number -> Literal (h.lexeme, Option.get h.literal), r
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
 and parse_factor tokens = 
-(* print_string "factor: ";List.iter print_token tokens; print_newline (); *)
 let (expr, remaining) = parse_primary tokens in
-(* print_endline (string_of_expr expr);
-print_string "factor remaining: ";List.iter print_token remaining; print_newline (); *)
 
   match remaining with
   | op :: rest when op.token_type = Star ->
@@ -73,9 +66,7 @@ print_string "factor remaining: ";List.iter print_token remaining; print_newline
   | _ -> (expr, remaining)
     
 and parse_term tokens = 
-  (* print_string "term: ";List.iter print_token tokens; print_newline (); *)
   let (expr, remaining) = parse_factor tokens in
-  (* print_string "term remaining: ";List.iter print_token remaining; print_newline (); *)
   match remaining with
   | op :: rest when op.token_type = Plus ->
     let ex, _rem = parse_term rest in
@@ -95,21 +86,6 @@ and parse_expression tokens = match tokens with
     
   end
   | _ -> parse_term tokens
-  (* | h :: o :: t -> begin
-    let (remaining, left) = parse_expression [h] in
-    match o.token_type with
-    | Plus -> 
-         remaining, left
-    | _ -> t, Unit
-    end *)
-    (* let e = parse h in *)
-
-  (* | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
-    let right = parse_expression rest in
-    [], Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
-  | n1 :: rest when n1.token_type = Number -> rest, Literal (n1.lexeme, Option.get n1.literal) *)
-  (* | t1 :: op :: t2 :: rest when op,token_type = Plus ->  *)
-  (* | _ -> raise (Err "dunno how to parse this expression") *)
 
 let parse_statement tokens = match tokens with
   (* starts a let *)
@@ -129,21 +105,12 @@ let rec loop (acc: statement list) (ts: token list) =
   print_string "remaining tokens: "; 
   List.iter print_token remaining_tokens; print_newline ();
     loop (stmt :: acc) remaining_tokens
-let parse (tokens: token list) : statement list =
-  (* let ast = parse_expression tokens in *)
-  (* print_string (string_of_expr ast); [] *)
+  let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in
   List.rev stmts
 
 let test_parse () = 
   let s1 = "let a = 10 + 10 * 10\n" in
-  let _s2 = "let a = 10 + 10\n let b = 10 + 20\n" in
-  let _s3 = "let a = 10 + 10\n let b = a + 20\n" in
   let tokens = tokenise s1 in 
-  (* print_endline "tokens:"; *)
-  (* List.iter print_token tokens; *)
-  (* print_endline "ast: "; *)
   let _ast = parse tokens in
-  (* print_string "Statements: "; print_int (List.length ast); print_newline (); *)
-  (* List.iter print_stmt ast; *)
   ()

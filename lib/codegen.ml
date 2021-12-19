@@ -63,6 +63,10 @@ let emit str gen =
   gen
 
   
+
+module Instr = struct
+  (*  *)
+end
   
 let bottom_var g = Hashtbl.fold (fun _ v c -> if v >= c then (v+8) else c) g.variables 0
 let empty_var g i = (bottom_var g)+(8*(i-1))
@@ -73,12 +77,24 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
                                         else
                                           let available = empty_var g 1 in
                                           Hashtbl.add g.variables var_name available; available
-
+let temp_v_counter = ref 1
+let alloc_temp_var g = 
+  let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
+  if Hashtbl.mem g.variables var_name then
+    failwith "Var already exists!!!"
+  else let available = empty_var g 1 in
+    temp_v_counter := !temp_v_counter + 1;
+    Hashtbl.add g.variables var_name available; (var_name, available)
+      
 let gen_plus_op a b gen =
-  gen
+  let name, offset = alloc_temp_var gen in
+  let _ = gen
   |> emit ("mov rax, " ^ (string_of_int a))
   |> emit ("mov rcx, " ^ (string_of_int b))
   |> emit "add rax, rcx ; output of addition is now in rax"
+  |> emit ("mov rax, [rsp+" ^ string_of_int offset ^ "] ; move into temp var")
+  in
+  (name, offset)
 
 let gen_print var gen = 
   let offset = Hashtbl.find gen.variables var in
@@ -89,24 +105,21 @@ emit ("
   call printf
 ") gen
 
-let rec gen_from_expr gen expr : (generator * string) = match expr with
+let gen_from_expr gen expr : (generator * string) = match expr with
   | Binary b -> begin
     match b.operator with
     | t when t.token_type = Plus -> begin
       match b.left_expr, b.right_expr with
       (* Num + Num *)
       | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
-        gen_plus_op a b gen
-
-      (* Num + Binary *)
-      | Literal (_, NumberLiteral a), Binary { left_expr; right_expr; operator } ->
-        let new_gen = gen_from_expr gen (Binary { left_expr; right_expr; operator }) in
-        gen_plus_op a b
+        let (name, _) = gen_plus_op a b gen in
+        gen, name
+     
       | _ -> failwith "Cant add these types"
     end
-    | _ -> gen
+    | _ -> gen, ""
   end
-  | _ -> gen
+  | _ -> gen, ""
 
 let gen_from_stmt gen (ast: statement) = match ast with
   | Expression e ->
@@ -121,8 +134,9 @@ let gen_from_stmt gen (ast: statement) = match ast with
           alloc_var assignment.identifier gen
         in
         (* Compute what we want to store in it *)
-        let new_gen = gen_from_expr gen assignment.expr in
-        let new_gen = emit ("mov [rsp+" ^ (string_of_int offset) ^ "], rax  ; move var \"" ^ assignment.identifier ^ "\" to offset " ^ string_of_int offset ^" on the stack\n") new_gen in
+        let (new_gen, name) = gen_from_expr gen assignment.expr in
+        let offset2 = Hashtbl.find new_gen.variables name in
+        let new_gen = emit ("mov [rsp+" ^ (string_of_int offset) ^ "], [rsp+" ^ string_of_int offset2 ^ "]  ; move var \"" ^ assignment.identifier ^ "\" to offset " ^ string_of_int offset ^" on the stack\n") new_gen in
         new_gen
       | _ -> gen
     end
@@ -153,10 +167,5 @@ let test_gen () =
   print_string "Num stmts: "; print_int (List.length ast);
   let ast = [List.hd ast] in
   let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
-  (*let _asm = s |> tokenise |> parse |> Optimise.optimise |> codegen gen in *)(* tokenise -> parse -> generate assembly *)
-  (* print_endline "With constant folding applied:"; *)
-  (* List.iter print_stmt non_opt_asm; *)
-  print_string "\nInstructions: "; print_int gen.instruction_count; print_newline ();
-  (* print_endline asm *)
   let ch = open_out "output.s" in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

@@ -78,8 +78,7 @@ let print_token (token: token): unit =
 
 let is_at_end ctx = ctx.current >= String.length ctx.source
 
-exception Err of string
-
+exception Lex_err of string
 
 let is_alpha c = let code = Char.code c in
   (code >= Char.code('A') && code <= Char.code('Z')) ||
@@ -98,7 +97,6 @@ let advance ctx = {
   ctx with 
   current = ctx.current + 1;
 }
-
 
 let scan_identifier ctx = 
   let rec scan_until_end (ctx: lexer_context) (acc: string) : (lexer_context * string) =
@@ -131,11 +129,8 @@ let add_token ttype s lit tokens line col =
   } in
   tokens := [new_token] @ !tokens
 
-
-
 let scan_next ctx tokens =
   let c = String.get ctx.source ctx.current in
-  (* print_char c; print_newline (); *)
   match c with
   | '(' -> add_token LeftParen "(" None tokens ctx.line ctx.start; ctx
   | ')' -> add_token RightParen ")" None tokens ctx.line ctx.start; ctx
@@ -175,10 +170,9 @@ let scan_next ctx tokens =
     add_token Number (string_of_int num) (Some (NumberLiteral num)) tokens ctx.line ctx.start; new_ctx
   | ' ' -> ctx
   | '\n' -> { ctx with line = ctx.line + 1 }
-  | _ -> raise (Err ("Unknown character: " ^ (Char.escaped c) ^ " on line " ^ (string_of_int ctx.line)))
+  | _ -> raise (Lex_err ("Unknown character: " ^ (Char.escaped c) ^ " on line " ^ (string_of_int ctx.line)))
 
 let scan_identifier x = x
-
 
 
 let tokenise (source: string): token list =
@@ -197,8 +191,6 @@ let tokenise (source: string): token list =
       loop (advance t) in
 
   let _final = loop ctx in
-  (* let ordered_tokens = List.rev !tokens in *)
-  (* List.iter print_token ordered_tokens; *)
   List.rev !tokens
 
 let read_whole_file filename =

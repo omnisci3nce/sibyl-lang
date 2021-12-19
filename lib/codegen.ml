@@ -35,9 +35,9 @@ let generate_exit = "
   syscall
 "
 
-type offset = int
+(* type offset = int *)
 type generator = {
-  variables: (string, offset) Hashtbl.t;
+  variables: (string, int) Hashtbl.t;
   mutable instruction_count: int;
   mutable asm: string;
   filepath: string;
@@ -89,13 +89,19 @@ emit ("
   call printf
 ") gen
 
-let gen_from_expr gen expr = match expr with
+let rec gen_from_expr gen expr : (generator * string) = match expr with
   | Binary b -> begin
     match b.operator with
     | t when t.token_type = Plus -> begin
       match b.left_expr, b.right_expr with
-      | Literal (_, NumberLiteral a), Literal (_, NumberLiteral b) ->
+      (* Num + Num *)
+      | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
         gen_plus_op a b gen
+
+      (* Num + Binary *)
+      | Literal (_, NumberLiteral a), Binary { left_expr; right_expr; operator } ->
+        let new_gen = gen_from_expr gen (Binary { left_expr; right_expr; operator }) in
+        gen_plus_op a b
       | _ -> failwith "Cant add these types"
     end
     | _ -> gen
@@ -141,14 +147,16 @@ let codegen gen (ast: statement list) : string =
 let test_gen () = 
   let s = "let a = 10 + 10 + 10\n" in
   let t = s |> tokenise in List.iter print_token t;
-  (* let gen = new_generator "output.s" in *)
-  (* print_endline "Parsed:"; *)
-  (* let ast = s |> tokenise |> parse  in List.iter print_stmt ast; *)
-  (* let non_opt_asm = s |> tokenise |> parse |> Optimise.optimise in *) (* |> codegen gen in tokenise -> parse -> generate assembly *)
+  let gen = new_generator "output.s" in
+  print_endline "Parsed:";
+  let ast = s |> tokenise |> parse  in List.iter print_stmt ast;
+  print_string "Num stmts: "; print_int (List.length ast);
+  let ast = [List.hd ast] in
+  let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
   (*let _asm = s |> tokenise |> parse |> Optimise.optimise |> codegen gen in *)(* tokenise -> parse -> generate assembly *)
   (* print_endline "With constant folding applied:"; *)
   (* List.iter print_stmt non_opt_asm; *)
-  (* print_string "\nInstructions: "; print_int gen.instruction_count; print_newline (); *)
+  print_string "\nInstructions: "; print_int gen.instruction_count; print_newline ();
   (* print_endline asm *)
-  (* let ch = open_out "output.s" in *)
-  (* Printf.fprintf ch "%s" asm write assembly to file  *)
+  let ch = open_out "output.s" in
+  Printf.fprintf ch "%s" asm (* write assembly to file *)

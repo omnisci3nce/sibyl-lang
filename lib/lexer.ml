@@ -73,7 +73,7 @@ type lexer_context = {
 
 let print_token (token: token): unit =
   match List.assoc_opt token.token_type keywords with
-  | Some s -> print_string s; print_newline ()
+  | Some s -> print_string s
   | None -> ()
 
 let is_at_end ctx = ctx.current >= String.length ctx.source

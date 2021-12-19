@@ -2,6 +2,8 @@
 
 open Lexer
 open Parser
+open Helpers
+let _STACK_SIZE = 1024
 
 let generate_begin =
 "
@@ -116,7 +118,7 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
       (* Num + Num *)
       | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
         let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
-        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
+        print_hashtbl gen.variables;
         gen, name
       (* Num + Expr *)
       | Literal (_, NumberLiteral a), e ->
@@ -150,9 +152,8 @@ let gen_from_stmt gen (ast: statement) = match ast with
           alloc_var assignment.identifier gen
         in
         (* Compute what we want to store in it *)
-        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
         let (new_gen, name) = gen_from_expr gen assignment.expr in
-        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
+        print_hashtbl gen.variables;
         (* let _ = generate_copy_ident assignment.identifier name gen in  *)
         (* let _offset2 = Hashtbl.find new_gen.variables name in *)
         let new_gen = generate_copy_ident assignment.identifier name new_gen in

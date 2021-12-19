@@ -1,0 +1,1 @@
+let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y)

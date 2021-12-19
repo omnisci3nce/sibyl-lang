@@ -4,7 +4,8 @@ open Lexer
 
 (* Types *)
 type expr =
-  | Literal of literal
+  | IntConst of int
+  (* | StringConst of string *)
   | Let of { identifier: string; expr: expr }
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
@@ -13,23 +14,19 @@ type expr =
   | Unit
   and literal = (string * literal_type)
 
-  type statement =
-    | Expression of expr
-    | Print of expr
-    
-    type program = statement list
-    
-    type value =
-      | Int
+type statement =
+  | Expression of expr
+  | Print of expr
+  
+type program = statement list
+
+type value =
+  | Int
       
 exception Syntax_error of string
 
 let rec string_of_expr e = match e with
-    | Literal l -> begin 
-      match l with
-      | (_s, NumberLiteral i) -> "num_literal " ^ (string_of_int i)
-      | _ -> ""
-    end
+    | IntConst i ->  "num_literal " ^ (string_of_int i)
     | Let e -> "Let (" ^ string_of_expr e.expr
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
@@ -60,7 +57,12 @@ let match_next tokens (token_types: token_type list) = match tokens with
 
 let rec parse_primary tokens =
   match tokens with
-  | h :: r  when h.token_type = Number -> Literal (h.lexeme, Option.get h.literal), r
+  | h :: r  when h.token_type = Number -> 
+    let i = begin match Option.get h.literal with
+    | NumberLiteral a -> a
+    | _ -> failwith "int expected"
+    end in
+    IntConst i, r
   | h :: r when h.token_type = Identifier -> Var h.lexeme, r
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"

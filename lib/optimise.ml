@@ -7,9 +7,9 @@ let constant_fold ast =
   let rec inner (expr: expr) = match expr with
     | Binary bop -> begin
       match bop.left_expr, bop.operator, bop.right_expr with
-      | Literal (_s1, NumberLiteral n1), { token_type = Plus; _}, Literal (_s2, NumberLiteral n2) ->
+      | IntConst n1, { token_type = Plus; _}, IntConst n2 ->
         let sum = n1 + n2 in
-          Literal (string_of_int sum, NumberLiteral sum)
+          IntConst sum
       | _ -> expr
     end
     | Let e -> Let { e with expr = inner e.expr }

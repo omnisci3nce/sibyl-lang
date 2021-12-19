@@ -28,8 +28,9 @@ let rec string_of_expr e = match e with
       | (_s, NumberLiteral i) -> "num_literal " ^ (string_of_int i)
       | _ -> ""
     end
-    | Let _ -> "let"
+    | Let e -> "Let (" ^ string_of_expr e.expr
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
+    | Unit -> "Unit"
     | _ -> "unknown expr"
 
 let print_stmt s = match s with
@@ -49,13 +50,36 @@ let print_stmt s = match s with
 
 let at_end t = List.length t = 0
 
-let parse_expression tokens = match tokens with
-  | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
-    rest, Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
-    | n1 :: rest when n1.token_type = Number -> rest, Literal (n1.lexeme, Option.get n1.literal)
+let rec parse_expression tokens = match tokens with
+  | h :: rest when h.token_type = Let -> begin
+    match rest with
+    | { token_type = Identifier; _} :: { token_type = Equal; _} :: remaining ->
+      Let { identifier = "let"; expr = parse_expression remaining}
+    | _ -> failwith "cant understand this let"
+  end
+  | h :: rest -> begin
+    match h, rest with
+    | _, op :: remaining when op.token_type = Plus -> Binary { left_expr = parse_expression [h]; operator = op; right_expr = parse_expression remaining }
+    | {token_type = Number; lexeme; literal; _}, _  -> Literal (lexeme, Option.get literal)
+    | _ -> Unit
+  end
+  (* | h :: o :: t -> begin
+    let (remaining, left) = parse_expression [h] in
+    match o.token_type with
+    | Plus -> 
+         remaining, left
+    | _ -> t, Unit
+    end *)
+    (* let e = parse h in *)
+
+  (* | n1 :: op :: n2 :: rest when n1.token_type = Number && n2.token_type = Number && op.token_type = Plus ->
+    let right = parse_expression rest in
+    [], Binary { left_expr = Literal (n1.lexeme, Option.get n1.literal); operator = op; right_expr = Literal (n2.lexeme, Option.get n2.literal) }
+  | n1 :: rest when n1.token_type = Number -> rest, Literal (n1.lexeme, Option.get n1.literal) *)
+  (* | t1 :: op :: t2 :: rest when op,token_type = Plus ->  *)
   | _ -> raise (Err "dunno how to parse this expression")
 
-let parse_statement tokens = match tokens with
+(* let parse_statement tokens = match tokens with
   (* starts a let *)
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let remaining_t, ex = parse_expression rest in
@@ -64,23 +88,28 @@ let parse_statement tokens = match tokens with
   | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest
   (* If its not a declaration, we assume its an expression *)
-  | _ -> Expression Unit, []
+  | _ -> Expression Unit, [] *)
 
-let rec loop (acc: statement list) (ts: token list) =
+(* let rec loop (acc: statement list) (ts: token list) =
   match ts with
   | [] -> acc
   | ts -> let stmt, remaining_tokens = parse_statement ts in
-    loop (stmt :: acc) remaining_tokens
+    loop (stmt :: acc) remaining_tokens *)
 let parse (tokens: token list) : statement list =
-  let stmts = loop [] tokens in
-  List.rev stmts
+  let ast = parse_expression tokens in
+  print_string (string_of_expr ast); []
+  (* let stmts = loop [] tokens in *)
+  (* List.rev stmts *)
 
 let test_parse () = 
-  let s1 = "let a = 10 + 10\n" in
+  let s1 = "let a = 10 + 10 + 10\n" in
   let _s2 = "let a = 10 + 10\n let b = 10 + 20\n" in
   let _s3 = "let a = 10 + 10\n let b = a + 20\n" in
   let tokens = tokenise s1 in 
+  print_endline "tokens:";
+  List.iter print_token tokens;
+  print_endline "ast: ";
   let ast = parse tokens in
-  print_string "Statements: "; print_int (List.length ast); print_newline ();
+  (* print_string "Statements: "; print_int (List.length ast); print_newline (); *)
   List.iter print_stmt ast;
   ()

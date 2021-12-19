@@ -9,7 +9,6 @@ type expr =
 
 type typ =
   | TInt
-  | TBool
 
 type typed_expr = { typ: typ; expr: expr }
 

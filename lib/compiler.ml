@@ -10,7 +10,7 @@ let compile source (arch: architecture) =
   source
   |> Lexer.tokenise
   |> Parser.parse
-  |> Typer.to_typed
+  (* |> Typer.to_typed *)
   |> lower_to_ir
   |> optimise_ir
   |> generate arch

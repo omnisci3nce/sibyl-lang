@@ -88,32 +88,43 @@ let alloc_temp_var g =
       
 let gen_plus_op a b gen =
   let name, offset = alloc_temp_var gen in
+  print_string "HERE: "; print_string name; print_newline ();
   let _ = gen
-  |> emit ("mov rax, " ^ (string_of_int a))
-  |> emit ("mov rcx, " ^ (string_of_int b))
+  |> emit ("mov rax, " ^  a)
+  |> emit ("mov rcx, " ^ b)
   |> emit "add rax, rcx ; output of addition is now in rax"
-  |> emit ("mov rax, [rsp+" ^ string_of_int offset ^ "] ; move into temp var")
+  |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
   in
   (name, offset)
 
-let gen_print var gen = 
-  let offset = Hashtbl.find gen.variables var in
+let gen_print var_name gen = 
+  let offset = Hashtbl.find gen.variables var_name in
 emit ("
   mov edi, out      ; 64-bit ABI passing order starts w/ edi, esi, ... so format string goes into the first argument
-  mov esi, [rsp+ " ^ string_of_int offset ^ "]  ; arg1 goes into esi
+  mov esi, [rsp+" ^ string_of_int offset ^ "]  ; arg1 goes into esi
   mov eax, 0        ; printf has varargs so eax counts num. of non-integer arguments being passed
   call printf
 ") gen
 
-let gen_from_expr gen expr : (generator * string) = match expr with
+let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
+
+let rec gen_from_expr gen expr : (generator * string) = match expr with
   | Binary b -> begin
     match b.operator with
     | t when t.token_type = Plus -> begin
       match b.left_expr, b.right_expr with
       (* Num + Num *)
       | Literal (_, NumberLiteral a),  Literal (_, NumberLiteral b) ->
-        let (name, _) = gen_plus_op a b gen in
+        let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
+        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
         gen, name
+      (* Num + Expr *)
+      | Literal (_, NumberLiteral a), e ->
+        let (new_gen, temp_name) = gen_from_expr gen e in
+        let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
+        new_gen, name
+      (* Or *)
+      (* Expr + Num *)
      
       | _ -> failwith "Cant add these types"
     end
@@ -121,22 +132,30 @@ let gen_from_expr gen expr : (generator * string) = match expr with
   end
   | _ -> gen, ""
 
+let generate_copy_ident target name gen = 
+  gen
+  |> emit ("mov rax, " ^ var gen name)
+  |> emit ("mov " ^ var gen target ^ ", rax")
+
 let gen_from_stmt gen (ast: statement) = match ast with
   | Expression e ->
     begin
       match e with
       | Let assignment ->
         (* Check if var has already been allocated *)
-        let offset = if is_alloc_var gen assignment.identifier then
+        let _offset = if is_alloc_var gen assignment.identifier then
           Hashtbl.find gen.variables assignment.identifier
         else 
         (* Allocate the variable to keep track of it *)
           alloc_var assignment.identifier gen
         in
         (* Compute what we want to store in it *)
+        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
         let (new_gen, name) = gen_from_expr gen assignment.expr in
-        let offset2 = Hashtbl.find new_gen.variables name in
-        let new_gen = emit ("mov [rsp+" ^ (string_of_int offset) ^ "], [rsp+" ^ string_of_int offset2 ^ "]  ; move var \"" ^ assignment.identifier ^ "\" to offset " ^ string_of_int offset ^" on the stack\n") new_gen in
+        Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y) gen.variables;
+        (* let _ = generate_copy_ident assignment.identifier name gen in  *)
+        (* let _offset2 = Hashtbl.find new_gen.variables name in *)
+        let new_gen = generate_copy_ident assignment.identifier name new_gen in
         new_gen
       | _ -> gen
     end
@@ -155,6 +174,7 @@ let codegen gen (ast: statement list) : string =
       inner next rest
   in
   let final = inner gen ast in
+  let final = gen_print "a" final in
   let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
   output
 
@@ -164,8 +184,7 @@ let test_gen () =
   let gen = new_generator "output.s" in
   print_endline "Parsed:";
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast;
-  print_string "Num stmts: "; print_int (List.length ast);
-  let ast = [List.hd ast] in
+  print_string "Num temp vars: "; print_int !temp_v_counter; print_newline ();
   let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
   let ch = open_out "output.s" in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

@@ -53,6 +53,7 @@ let at_end t = List.length t = 0
 let rec parse_primary tokens =
   match tokens with
   | h :: r  when h.token_type = Number -> Literal (h.lexeme, Option.get h.literal), r
+  | h :: r when h.token_type = Identifier -> Var h.lexeme, r
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
@@ -85,6 +86,8 @@ and parse_expression tokens = match tokens with
     | _ -> failwith "cooked"
     
   end
+  | h :: _a :: rest when h.token_type = Identifier && h.lexeme = "print" ->
+    parse_expression rest
   | _ -> parse_term tokens
 
 let parse_statement tokens = match tokens with
@@ -93,8 +96,8 @@ let parse_statement tokens = match tokens with
     let ex, remaining_t = parse_expression rest in
       Expression (
         Let { identifier = lexeme; expr = ex}), remaining_t
-  | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
-    Print (Var v.lexeme), rest
+  (* | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
+    Print (Var v.lexeme), rest *)
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []
 

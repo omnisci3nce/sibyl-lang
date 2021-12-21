@@ -49,6 +49,35 @@ type generator = {
   channel: out_channel
 }
 
+module type CodeGenerator = sig
+  val new_generator : string -> generator
+  val close_generator : generator -> unit
+
+  val gen_plus_op : string -> string -> generator -> (string * int)
+  val gen_mult_op : string -> string -> generator -> (string * int)
+  val gen_print : string -> generator -> generator
+end
+
+module JSBackend : CodeGenerator = struct
+  let new_generator filename =
+    let filepath = (Filename.chop_extension filename) ^ ".js" in
+    {
+      variables = Hashtbl.create 100;
+      asm = "";
+      instruction_count = 0;
+      filepath;
+      channel = open_out filepath
+    }
+  let close_generator g = close_out g.channel
+
+  let gen_plus_op _a _b _gen = 
+    (* Allocate temp var *)
+    let _s = "temp_var = a + b" in
+    ("", 0)
+  let gen_mult_op _a _b _gen = ("", 0)
+  let gen_print _var gen = gen
+end
+
 let new_generator filename =
   let filepath = (Filename.chop_extension filename) ^ ".s" in
   {
@@ -106,7 +135,7 @@ let gen_plus_op a b gen =
 let gen_mult_op a b gen =
   let name, offset = alloc_temp_var gen in
   let _ = gen
-  |> emit ("mov rax, " ^  a)
+  |> emit ("mov rax, " ^ a)
   |> emit ("mov rdx, " ^ b)
   |> emit "mul rdx ; output of addition is now in rax"
   |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
@@ -224,6 +253,19 @@ let codegen gen (ast: statement list) : string =
   let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
   output
 
+type target = AMD64 | AARCH_64 | RISCV | JS | WASM (* Target platforms that I'd like to support *)
+
+let compile ~target filepath (_ast: statement list) =
+  let gen = match target with
+    | AMD64 -> new_generator filepath
+    | AARCH_64 -> failwith "This backend is not implemented yet"
+    | RISCV -> failwith "This backend is not implemented yet"
+    | JS -> failwith "This backend is not implemented yet"
+    | WASM -> failwith "This backend is not implemented yet"
+  in
+  let ch = open_out "output.js" in
+  Printf.fprintf ch "%s" gen.asm 
+
 let test_gen () = 
   let s = "let a = (10 * 5) + 10\n" in
   let t = s |> tokenise in List.iter print_token t;
@@ -233,5 +275,5 @@ let test_gen () =
   print_string "Num temp vars: "; print_int !temp_v_counter; print_newline ();
   let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
   print_string "Instruction count: "; print_int gen.instruction_count; print_newline ();
-  let ch = open_out "output.s" in
+  let ch = open_out gen.filepath in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

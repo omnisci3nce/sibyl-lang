@@ -167,7 +167,7 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
         let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
         (* print_hashtbl gen.variables; *)
         gen, name
-        | _ -> failwith "Cant mutliply these types"
+        | _ -> failwith "Cant multiply these types"
     end
     | _ -> failwith "todo : implement this operator for binary expression"
   end

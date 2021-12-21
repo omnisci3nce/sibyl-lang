@@ -188,31 +188,27 @@ let generate_copy_ident target name gen =
   |> emit ("mov " ^ var gen target ^ ", rax")
 
 let gen_from_stmt gen (ast: statement) = match ast with
-  | Expression e ->
-    begin
-      match e with
-      | Let assignment ->
+  | LetDecl e ->
         (* Check if var has already been allocated *)
-        let _offset = if is_alloc_var gen assignment.identifier then
-          Hashtbl.find gen.variables assignment.identifier
+        let _offset = if is_alloc_var gen e.identifier then
+          Hashtbl.find gen.variables e.identifier
         else 
         (* Allocate the variable to keep track of it *)
-          alloc_var assignment.identifier gen
+          alloc_var e.identifier gen
         in
         (* Compute what we want to store in it *)
-        let (new_gen, name) = gen_from_expr gen assignment.expr in
+        let (new_gen, name) = gen_from_expr gen e.expr in
         (* print_hashtbl gen.variables; *)
-        (* let _ = generate_copy_ident assignment.identifier name gen in  *)
+        (* let _ = generate_copy_ident e.identifier name gen in  *)
         (* let _offset2 = Hashtbl.find new_gen.variables name in *)
-        let new_gen = generate_copy_ident assignment.identifier name new_gen in
+        let new_gen = generate_copy_ident e.identifier name new_gen in
         new_gen
-      | _ -> gen
-    end
   | Print e -> begin
     match e with
     | Var v -> gen_print v gen
     | _ -> gen
   end
+  | _ -> gen
 
 let codegen gen (ast: statement list) : string = 
   let _stmt = List.nth ast 0 in

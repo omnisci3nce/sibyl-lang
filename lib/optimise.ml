@@ -4,7 +4,7 @@ type pass =
 | ConstantFold
 
 let constant_fold ast =
-  let rec inner (expr: expr) = match expr with
+  let inner (expr: expr) = match expr with
     | Binary bop -> begin
       match bop.left_expr, bop.operator, bop.right_expr with
       | IntConst n1, { token_type = Plus; _}, IntConst n2 ->
@@ -12,7 +12,7 @@ let constant_fold ast =
           IntConst sum
       | _ -> expr
     end
-    | Let e -> Let { e with expr = inner e.expr }
+    (* | Let e -> Let { e with expr = inner e.expr } *)
     | _ -> expr
   in
   let handle_node (stmt: statement) = match stmt with

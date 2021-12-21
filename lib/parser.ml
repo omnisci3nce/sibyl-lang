@@ -6,7 +6,7 @@ open Lexer
 type expr =
   | IntConst of int
   (* | StringConst of string *)
-  | Let of { identifier: string; expr: expr }
+  (* | Let of { identifier: string; expr: expr } *)
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
   | Grouping of { expr: expr }
@@ -17,6 +17,8 @@ type expr =
 
 type statement =
   | Expression of expr
+  | LetDecl of { identifier: string; expr: expr }
+  (* | FunctionDecl of { name: string; } *)
   | Print of expr
   
 type program = statement list
@@ -28,7 +30,7 @@ exception Syntax_error of string
 
 let rec string_of_expr e = match e with
     | IntConst i ->  "num_literal " ^ (string_of_int i)
-    | Let e -> "Let (" ^ string_of_expr e.expr
+    (* | Let e -> "Let (" ^ string_of_expr e.expr *)
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
     | Grouping _ -> "Grouping"
@@ -38,7 +40,7 @@ let print_stmt s = match s with
   | Expression e ->
     begin
     match e with
-    | Let a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr)
+    (* | Let a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr) *)
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
     | _ -> print_string (string_of_expr e)
     end
@@ -46,6 +48,7 @@ let print_stmt s = match s with
     | Var v -> print_endline ("Print " ^ v)
     | _ -> print_endline "dunno"
   end
+  | _ -> print_endline ""
 
 let at_end t = List.length t = 0
 
@@ -96,15 +99,8 @@ and parse_term tokens =
   | _ -> expr, remaining
 
 and parse_expression tokens = match tokens with
-  | h :: rest when h.token_type = Let -> begin
-    match rest with
-    | { token_type = Identifier; _} :: { token_type = Equal; _} :: remaining ->
-      let expr, rem = parse_expression remaining in
-      Let { identifier = "let"; expr = expr}, rem
-    | _ -> failwith "cooked"
-    
-  end
-  | h :: _a :: rest when h.token_type = Identifier && h.lexeme = "print" ->
+  | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
+  (*  TODO print *)
     parse_expression rest
   | _ -> parse_term tokens
 
@@ -112,8 +108,7 @@ let parse_statement tokens = match tokens with
   (* starts a let *)
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let ex, remaining_t = parse_expression rest in
-      Expression (
-        Let { identifier = lexeme; expr = ex}), remaining_t
+      LetDecl { identifier = lexeme; expr = ex}, remaining_t
   (* | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest *)
   (* If its not a declaration, we assume its an expression *)

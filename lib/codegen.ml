@@ -58,27 +58,7 @@ module type CodeGenerator = sig
   val gen_print : string -> generator -> generator
 end
 
-module JSBackend : CodeGenerator = struct
-  let new_generator filename =
-    let filepath = (Filename.chop_extension filename) ^ ".js" in
-    {
-      variables = Hashtbl.create 100;
-      asm = "";
-      instruction_count = 0;
-      filepath;
-      channel = open_out filepath
-    }
-  let close_generator g = close_out g.channel
-
-  let gen_plus_op _a _b _gen = 
-    (* Allocate temp var *)
-    let _s = "temp_var = a + b" in
-    ("", 0)
-  let gen_mult_op _a _b _gen = ("", 0)
-  let gen_print _var gen = gen
-end
-
-let new_generator filename =
+(* let new_generator filename =
   let filepath = (Filename.chop_extension filename) ^ ".s" in
   {
     variables = Hashtbl.create 100;
@@ -88,7 +68,7 @@ let new_generator filename =
     channel = open_out filepath
   }
 
-let close_generator generator = close_out generator.channel
+let close_generator generator = close_out generator.channel *)
 
 (* emit one line of asm *)
 let emit str gen =
@@ -96,8 +76,9 @@ let emit str gen =
   gen.asm <- gen.asm ^ "  " ^ str ^ "\n";
   gen
 
-  
 
+
+  
 module Instr = struct
   (*  *)
 end
@@ -112,6 +93,8 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
                                           let available = empty_var g 1 in
                                           Logs.debug (fun m -> m "[Codegen] Allocating variable '%s' at offset %d" var_name available);
                                           Hashtbl.add g.variables var_name available; available
+
+
 let temp_v_counter = ref 1
 let alloc_temp_var g = 
   let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
@@ -121,8 +104,36 @@ let alloc_temp_var g =
     temp_v_counter := !temp_v_counter + 1;
     Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
     Hashtbl.add g.variables var_name available; (var_name, available)
-      
-let gen_plus_op a b gen =
+
+(* module JSBackend : CodeGenerator = struct *)
+  let new_generator filename =
+    let filepath = (Filename.chop_extension filename) ^ ".js" in
+    {
+      variables = Hashtbl.create 100;
+      asm = "";
+      instruction_count = 0;
+      filepath;
+      channel = open_out filepath
+    }
+  let close_generator g = close_out g.channel
+
+  let gen_plus_op a b gen = 
+    let name, off (* Don't need offset in JS *) = alloc_temp_var gen in
+    let _ = gen
+    |> emit ("let " ^ name ^ " = " ^ a ^ "+" ^ b)    
+    in
+    (name, off)
+
+  let gen_mult_op a b gen = 
+    let name, off (* Don't need offset in JS *) = alloc_temp_var gen in
+    let _ = gen
+    |> emit ("let " ^ name ^ " = " ^ a ^ "*" ^ b)    
+    in
+    (name, off)
+  let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
+(* end *)
+
+(* let gen_plus_op a b gen =
   let name, offset = alloc_temp_var gen in
   let _ = gen
   |> emit ("mov rax, " ^ a)
@@ -149,7 +160,7 @@ emit ("
   mov esi, [rsp+" ^ string_of_int offset ^ "]  ; arg1 goes into esi
   mov eax, 0        ; printf has varargs so eax counts num. of non-integer arguments being passed
   call printf
-") gen
+") gen *)
 
 let gen_add_ten _a gen =
   (* let name, offset = alloc_temp_var gen in *)
@@ -211,10 +222,13 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
   end
   | _ -> gen, "todo: handle this expression in generator"
 
-let generate_copy_ident target name gen = 
+(* let generate_copy_ident target name gen = 
   gen
   |> emit ("mov rax, " ^ var gen name)
-  |> emit ("mov " ^ var gen target ^ ", rax")
+  |> emit ("mov " ^ var gen target ^ ", rax") *)
+let generate_copy_ident target name gen = 
+  gen
+  |> emit (target ^ " = " ^ name)
 
 let gen_from_stmt gen (ast: statement) = match ast with
   | LetDecl e ->
@@ -239,6 +253,7 @@ let gen_from_stmt gen (ast: statement) = match ast with
   end
   | _ -> gen
 
+
 let codegen gen (ast: statement list) : string = 
   let _stmt = List.nth ast 0 in
   let rec inner gen stmts = match stmts with
@@ -250,7 +265,8 @@ let codegen gen (ast: statement list) : string =
   let final = inner gen ast in
   (* let final = gen_add_ten "5" final in *)
   let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
-  let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
+  (* let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in *)
+  let output = final.asm in
   output
 
 type target = AMD64 | AARCH_64 | RISCV | JS | WASM (* Target platforms that I'd like to support *)
@@ -260,20 +276,22 @@ let compile ~target filepath (_ast: statement list) =
     | AMD64 -> new_generator filepath
     | AARCH_64 -> failwith "This backend is not implemented yet"
     | RISCV -> failwith "This backend is not implemented yet"
-    | JS -> failwith "This backend is not implemented yet"
+    | JS -> new_generator filepath
     | WASM -> failwith "This backend is not implemented yet"
   in
   let ch = open_out "output.js" in
   Printf.fprintf ch "%s" gen.asm 
 
 let test_gen () = 
-  let s = "let a = (10 * 5) + 10\n" in
-  let t = s |> tokenise in List.iter print_token t;
-  let gen = new_generator "output.s" in
-  print_endline "Parsed:";
+  let s = "let a = 6 * 10\n" in
+  (* let ast = s |> tokenise |> parse in
+  List.iter print_stmt ast; *)
+  let gen = new_generator "output.js" in
+  (* print_endline "Parsed:"; *)
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
-  print_string "Num temp vars: "; print_int !temp_v_counter; print_newline ();
+  (* print_string "Num temp vars: "; print_int !temp_v_counter; print_newline (); *)
   let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
-  print_string "Instruction count: "; print_int gen.instruction_count; print_newline ();
+  (* print_string "Instruction count: "; print_int gen.instruction_count; print_newline (); *)
   let ch = open_out gen.filepath in
-  Printf.fprintf ch "%s" asm (* write assembly to file *)
+  Printf.fprintf ch "%s" asm 
+  (* write assembly to file *)

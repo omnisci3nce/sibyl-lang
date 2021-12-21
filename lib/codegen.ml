@@ -18,6 +18,7 @@ global _start       ; Provide program starting address to linker
 let generate_startup =
 "
 extern printf
+extern addTen
 
 _start:
   ; Preallocate 1024 bytes on the stack to use for the whole program (for now)
@@ -36,6 +37,8 @@ let generate_exit = "
   mov rax, 60
   syscall
 "
+
+type calling_convention = Microsoft_x64 | System_V
 
 (* type offset = int *)
 type generator = {
@@ -119,6 +122,17 @@ emit ("
   call printf
 ") gen
 
+let gen_add_ten _a gen =
+  (* let name, offset = alloc_temp_var gen in *)
+  let _ = gen
+  |> emit ("
+    mov rdi, 5
+    mov rax, 0
+    call addTen
+    mov [rsp+0], rax
+  ") in
+  gen
+
 let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
 
 let rec gen_from_expr gen expr : (generator * string) = match expr with
@@ -200,12 +214,13 @@ let codegen gen (ast: statement list) : string =
       inner next rest
   in
   let final = inner gen ast in
+  let final = gen_add_ten "5" final in
   let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
   let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
   output
 
 let test_gen () = 
-  let s = "let a = 10 + 5 * 10\n" in
+  let s = "let a = 10 * (5 + 10)\n" in
   let t = s |> tokenise in List.iter print_token t;
   let gen = new_generator "output.s" in
   print_endline "Parsed:";

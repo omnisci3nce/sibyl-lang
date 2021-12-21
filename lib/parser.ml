@@ -9,6 +9,7 @@ type expr =
   | Let of { identifier: string; expr: expr }
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
+  | Grouping of { expr: expr }
   | Var of string
   | If of expr * expr * expr
   | Unit
@@ -64,6 +65,16 @@ let rec parse_primary tokens =
     end in
     IntConst i, r
   | h :: r when h.token_type = Identifier -> Var h.lexeme, r
+  | h :: r when h.token_type = LeftParen ->
+    begin
+      let (expr, remaining) = parse_expression r in
+      print_endline (string_of_expr expr);
+      print_endline "Remaining: ";
+      List.iter print_token remaining;
+      match remaining with
+      | h :: r when h.token_type = RightParen -> Grouping { expr = expr }, r
+      | _ -> failwith "right paren expected"
+    end
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
@@ -79,8 +90,8 @@ and parse_term tokens =
   let (expr, remaining) = parse_factor tokens in
   match match_next remaining [Plus; Minus] with
   | Some t ->
-      let ex, _rem = parse_term (List.tl remaining) in
-      Binary { left_expr = expr; operator = t; right_expr = ex }, remaining
+      let ex, rem = parse_term (List.tl remaining) in
+      Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> expr, remaining
 
 and parse_expression tokens = match tokens with

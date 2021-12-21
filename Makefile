@@ -1,5 +1,5 @@
 output.exe: output.o
-	gcc -no-pie -nostartfiles output.o -o output.exe
+	gcc -no-pie -nostartfiles lib/c/addTen.c output.o  -o output.exe
 
 output.o: output.s
 	nasm -f elf64 output.s -o output.o

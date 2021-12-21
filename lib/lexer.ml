@@ -4,6 +4,8 @@ type token_type =
   (* single char tokens *)
   LeftParen
   | RightParen
+  | LeftBrace
+  | RightBrace
   | Dot
   | Minus
   | Plus
@@ -28,6 +30,7 @@ type token_type =
   | Let
   | True
   | False
+  | Func
   | Constrain
 
   | EOF
@@ -35,6 +38,8 @@ type token_type =
 let keywords = [
   LeftParen, "LeftParen";
   RightParen, "RightParen";
+  LeftBrace, "LeftBrace";
+  RightBrace, "RightBrace";
   Plus, "Plus";
   Minus, "Minus";
   Dot, "Dot";
@@ -46,7 +51,8 @@ let keywords = [
   Number, "Number";
   String, "String";
   True, "True";
-  False, "False"
+  False, "False";
+  Func, "Func"
 ]
 let str_of_token_type t = List.assoc t keywords 
 
@@ -134,6 +140,8 @@ let scan_next ctx tokens =
   match c with
   | '(' -> add_token LeftParen "(" None tokens ctx.line ctx.start; ctx
   | ')' -> add_token RightParen ")" None tokens ctx.line ctx.start; ctx
+  | '{' -> add_token LeftBrace "(" None tokens ctx.line ctx.start; ctx
+  | '}' -> add_token RightBrace ")" None tokens ctx.line ctx.start; ctx
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
   | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
@@ -160,6 +168,7 @@ let scan_next ctx tokens =
     begin
     match indent_string with
     | "let" -> add_token Let "let" None tokens ctx.line ctx.start; new_ctx
+    | "fn" -> add_token Func "fn" None tokens ctx.line ctx.start; new_ctx
     | "constrain" -> add_token Constrain "constrain" None tokens ctx.line ctx.start; new_ctx
     | "true" -> add_token True "constrain" None tokens ctx.line ctx.start; new_ctx
     | "false" -> add_token False (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx

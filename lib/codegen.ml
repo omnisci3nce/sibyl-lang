@@ -151,6 +151,7 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
         let (new_gen, temp_name) = gen_from_expr gen e in
         let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
         new_gen, name
+      (* Expr + Num *)
       | e, IntConst a ->
         let (new_gen, temp_name) = gen_from_expr gen e in
         let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in

@@ -31,6 +31,7 @@ let rec string_of_expr e = match e with
     | Let e -> "Let (" ^ string_of_expr e.expr
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
+    | Grouping _ -> "Grouping"
     | _ -> "unknown expr"
 
 let print_stmt s = match s with

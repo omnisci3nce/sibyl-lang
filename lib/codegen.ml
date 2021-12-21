@@ -136,6 +136,7 @@ let gen_add_ten _a gen =
 let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
 
 let rec gen_from_expr gen expr : (generator * string) = match expr with
+  | Grouping e -> gen_from_expr gen e.expr
   | Binary b -> begin
     match b.operator with
     | t when t.token_type = Plus -> begin
@@ -165,9 +166,16 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
       (* Num + Num *)
       | IntConst a, IntConst b ->
         let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
-        (* print_hashtbl gen.variables; *)
         gen, name
-        | _ -> failwith "Cant multiply these types"
+      | IntConst a, e ->
+        let (new_gen, temp_name) = gen_from_expr gen e in
+        let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
+        new_gen, name
+      | e, IntConst a ->
+        let (new_gen, temp_name) = gen_from_expr gen e in
+        let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
+        new_gen, name
+      | _ -> failwith "Cant multiply these types"
     end
     | _ -> failwith "todo : implement this operator for binary expression"
   end
@@ -214,13 +222,13 @@ let codegen gen (ast: statement list) : string =
       inner next rest
   in
   let final = inner gen ast in
-  let final = gen_add_ten "5" final in
+  (* let final = gen_add_ten "5" final in *)
   let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
   let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in
   output
 
 let test_gen () = 
-  let s = "let a = 10 * (5 + 10)\n" in
+  let s = "let a = (10 * 5) + 10\n" in
   let t = s |> tokenise in List.iter print_token t;
   let gen = new_generator "output.s" in
   print_endline "Parsed:";

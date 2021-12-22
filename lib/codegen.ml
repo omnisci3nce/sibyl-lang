@@ -17,7 +17,7 @@ type generator = {
 module type CodeGenerator = sig
   val new_generator : string -> generator
   val close_generator : generator -> unit
-
+  val var : generator -> string -> string
   val gen_plus_op : string -> string -> generator -> (string * int)
   val gen_mult_op : string -> string -> generator -> (string * int)
   val gen_print : string -> generator -> generator
@@ -53,6 +53,7 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
 module JS_Backend : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".js"
   let close_generator g = close_out g.channel
+  let var _g s = s
   let gen_plus_op a b gen = 
     let name, off (* Don't need offset in JS *) = alloc_temp_var gen in
     let _ = gen
@@ -73,6 +74,7 @@ end
 module X64_Backend : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".s"
   let close_generator g = close_out g.channel
+  let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
   let gen_plus_op a b gen =
     let name, offset = alloc_temp_var gen in
     let _ = gen
@@ -150,14 +152,6 @@ let alloc_temp_var g =
     temp_v_counter := !temp_v_counter + 1;
     Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
     Hashtbl.add g.variables var_name available; (var_name, available)
-
-  
-
-
-
-
-(* let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]" *)
-let var _g s = s
 
 let rec gen_from_expr gen expr : (generator * string) = match expr with
   | Grouping e -> gen_from_expr gen e.expr

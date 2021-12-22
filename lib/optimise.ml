@@ -25,12 +25,11 @@ let constant_fold ast =
       | _ -> expr
     end
     | Grouping e -> inner e.expr
-    (* | Let e -> Let { e with expr = inner e.expr } *)
     | _ -> expr
   in
   let handle_node (stmt: statement) = match stmt with
-  | LetDecl a -> LetDecl { a with expr = inner a.expr } (* *)
-  | _ -> stmt (* if its not a expression statement do nothing *)
+  | LetDecl a -> LetDecl { a with expr = inner a.expr }
+  | _ -> stmt
   in
   List.map handle_node ast
 

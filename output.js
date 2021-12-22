@@ -1,2 +1,2 @@
-  a = 1000
+  a = 400
   console.log(a)

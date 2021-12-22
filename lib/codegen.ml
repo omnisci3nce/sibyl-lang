@@ -23,6 +23,7 @@ module type CodeGenerator = sig
   val gen_mult_op : string -> string -> generator -> (string * int)
   val gen_print : string -> generator -> generator
   val gen_copy_ident : string -> string -> generator -> generator
+  val gen_assign : string -> string -> generator -> generator
 end
 
 let new_generator_ filename extension =
@@ -35,6 +36,7 @@ let new_generator_ filename extension =
     channel = open_out filepath
   }
 
+(* Target platform agnostic helpers *)
 let emit str gen =
   gen.instruction_count <- gen.instruction_count + 1;
   gen.instructions <- gen.instructions ^ "  " ^ str ^ "\n";
@@ -51,14 +53,14 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
                                           Logs.debug (fun m -> m "[Codegen] Allocating variable '%s' at offset %d" var_name available);
                                           Hashtbl.add g.variables var_name available; available
 
-  let alloc_temp_var g = 
-    let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
-    if Hashtbl.mem g.variables var_name then
-      failwith "Var already exists!!!"
-    else let available = empty_var g 1 in
-      temp_v_counter := !temp_v_counter + 1;
-      Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
-      Hashtbl.add g.variables var_name available; (var_name, available)
+let alloc_temp_var g = 
+  let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
+  if Hashtbl.mem g.variables var_name then
+    failwith "Var already exists!!!"
+  else let available = empty_var g 1 in
+    temp_v_counter := !temp_v_counter + 1;
+    Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
+    Hashtbl.add g.variables var_name available; (var_name, available)
 
 module JS_CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".js"
@@ -79,12 +81,13 @@ module JS_CodeGen : CodeGenerator = struct
     (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
   let gen_copy_ident target name gen = gen |> emit (target ^ " = " ^ name)
+  let gen_assign target str gen = gen |> emit (target ^ " = " ^ str)
 end
 
 module X64_CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".s"
   let close_generator g = close_out g.channel
-  let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
+  let var g s = print_string "str:"; print_string s; Helpers.print_hashtbl g.variables; "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
   let gen_plus_op a b gen =
     let name, offset = alloc_temp_var gen in
     let _ = gen
@@ -103,7 +106,8 @@ module X64_CodeGen : CodeGenerator = struct
     |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
     in
     (name, offset)
-  let gen_print var_name gen = 
+  let gen_print var_name gen =
+    print_string "print"; print_string var_name; 
     let offset = Hashtbl.find gen.variables var_name in
   emit ("
     mov edi, out      ; 64-bit ABI passing order starts w/ edi, esi, ... so format string goes into the first argument
@@ -112,9 +116,12 @@ module X64_CodeGen : CodeGenerator = struct
     call printf
   ") gen
   let gen_copy_ident target name gen = 
+    print_string "HELLO"; print_string target; print_string name;
     gen
     |> emit ("mov rax, " ^ var gen name)
     |> emit ("mov " ^ var gen target ^ ", rax")
+    let gen_assign target str gen = gen
+    |> emit ("mov qword " ^ var gen target ^ ", " ^ str) (* only dealing with 64 bit data types for now *)
 end
 
 let generate_begin =
@@ -152,92 +159,93 @@ let generate_exit = "
 
 type calling_convention = Microsoft_x64 | System_V
 
-
-
 module Backend (CG : CodeGenerator) = struct
   include CG
 
-
-
-let rec gen_from_expr gen expr : (generator * string) = match expr with
-  | Grouping e -> gen_from_expr gen e.expr
-  | Binary b -> begin
-    match b.operator with
-    | t when t.token_type = Plus -> begin
-      match b.left_expr, b.right_expr with
-      (* Num + Num *)
-      | IntConst a,  IntConst b ->
-        let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
-        (* print_hashtbl gen.variables; *)
-        gen, name
-      (* Num + Expr *)
-      | IntConst a, e ->
-        let (new_gen, temp_name) = gen_from_expr gen e in
-        let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
-        new_gen, name
-      (* Expr + Num *)
-      | e, IntConst a ->
-        let (new_gen, temp_name) = gen_from_expr gen e in
-        let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
-        new_gen, name
-      | le, re ->
-        let (new_gen, left_temp_name) = gen_from_expr gen le in
-        let new_gen, right_temp_name = gen_from_expr new_gen re in
-        let name, _ = gen_plus_op left_temp_name right_temp_name new_gen in
-        new_gen, name
-      (* | _ -> failwith (Printf.sprintf "Cant add these types [%s] + [%s]" (string_of_expr b.left_expr) (string_of_expr b.right_expr)) *)
+  let rec gen_from_expr gen expr : (generator * string) = match expr with
+    | Grouping e -> gen_from_expr gen e.expr
+    | Binary b -> begin
+      match b.operator with
+      | t when t.token_type = Plus -> begin
+        match b.left_expr, b.right_expr with
+        (* Num + Num *)
+        | IntConst a,  IntConst b ->
+          let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
+          (* print_hashtbl gen.variables; *)
+          gen, name
+        (* Num + Expr *)
+        | IntConst a, e ->
+          let (new_gen, temp_name) = gen_from_expr gen e in
+          let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
+          new_gen, name
+        (* Expr + Num *)
+        | e, IntConst a ->
+          let (new_gen, temp_name) = gen_from_expr gen e in
+          let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
+          new_gen, name
+        | le, re ->
+          let (new_gen, left_temp_name) = gen_from_expr gen le in
+          let new_gen, right_temp_name = gen_from_expr new_gen re in
+          let name, _ = gen_plus_op left_temp_name right_temp_name new_gen in
+          new_gen, name
+        (* | _ -> failwith (Printf.sprintf "Cant add these types [%s] + [%s]" (string_of_expr b.left_expr) (string_of_expr b.right_expr)) *)
+      end
+      | t when t.token_type = Star -> begin
+        match b.left_expr, b.right_expr with
+        (* Num + Num *)
+        | IntConst a, IntConst b ->
+          let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
+          gen, name
+        | IntConst a, e ->
+          let (new_gen, temp_name) = gen_from_expr gen e in
+          let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
+          new_gen, name
+        | e, IntConst a ->
+          let (new_gen, temp_name) = gen_from_expr gen e in
+          let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
+          new_gen, name
+        | le, re ->
+          let (new_gen, left_temp_name) = gen_from_expr gen le in
+          let new_gen, right_temp_name = gen_from_expr new_gen re in
+          let name, _ = gen_mult_op left_temp_name right_temp_name new_gen in
+          new_gen, name
+        (* | _ -> failwith "Cant multiply these types" *)
+      end
+      | _ -> failwith "todo : implement this operator for binary expression"
     end
-    | t when t.token_type = Star -> begin
-      match b.left_expr, b.right_expr with
-      (* Num + Num *)
-      | IntConst a, IntConst b ->
-        let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
-        gen, name
-      | IntConst a, e ->
-        let (new_gen, temp_name) = gen_from_expr gen e in
-        let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
-        new_gen, name
-      | e, IntConst a ->
-        let (new_gen, temp_name) = gen_from_expr gen e in
-        let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
-        new_gen, name
-      | le, re ->
-        let (new_gen, left_temp_name) = gen_from_expr gen le in
-        let new_gen, right_temp_name = gen_from_expr new_gen re in
-        let name, _ = gen_mult_op left_temp_name right_temp_name new_gen in
-        new_gen, name
-      (* | _ -> failwith "Cant multiply these types" *)
+    | IntConst x -> gen, (string_of_int x)
+    | _ -> failwith "todo: handle this expression in generator"
+
+  let gen_from_stmt gen (ast: statement) = match ast with
+    | LetDecl e ->
+          (* Check if var has already been allocated *)
+          let _offset = if is_alloc_var gen e.identifier then
+            Hashtbl.find gen.variables e.identifier
+          else 
+          (* Allocate the variable to keep track of it *)
+            alloc_var e.identifier gen
+          in begin match e.expr with
+          | IntConst x -> 
+              let (new_gen, name) = gen_from_expr gen e.expr in
+              print_string "Name: "; print_string name;
+              let new_gen = gen_assign e.identifier (string_of_int x) new_gen in
+              new_gen
+          | _ -> 
+              (* Compute what we want to store in it *)
+              let (new_gen, name) = gen_from_expr gen e.expr in
+              print_string "Name: "; print_string name;
+              let new_gen = gen_copy_ident e.identifier name new_gen in
+              new_gen
+          end
+          (* print_hashtbl gen.variables; *)
+          (* let _ = generate_copy_ident e.identifier name gen in  *)
+          (* let _offset2 = Hashtbl.find new_gen.variables name in *)
+    | Print e -> begin
+      match e with
+      | Var v -> gen_print v gen
+      | _ -> gen
     end
-    | _ -> failwith "todo : implement this operator for binary expression"
-  end
-  | IntConst x -> gen, (string_of_int x)
-  | _ -> failwith "todo: handle this expression in generator"
-
-
-
-
-let gen_from_stmt gen (ast: statement) = match ast with
-  | LetDecl e ->
-        (* Check if var has already been allocated *)
-        let _offset = if is_alloc_var gen e.identifier then
-          Hashtbl.find gen.variables e.identifier
-        else 
-        (* Allocate the variable to keep track of it *)
-          alloc_var e.identifier gen
-        in
-        (* Compute what we want to store in it *)
-        let (new_gen, name) = gen_from_expr gen e.expr in
-        (* print_hashtbl gen.variables; *)
-        (* let _ = generate_copy_ident e.identifier name gen in  *)
-        (* let _offset2 = Hashtbl.find new_gen.variables name in *)
-        let new_gen = gen_copy_ident e.identifier name new_gen in
-        new_gen
-  | Print e -> begin
-    match e with
-    | Var v -> gen_print v gen
     | _ -> gen
-  end
-  | _ -> gen
 
   let codegen gen (ast: statement list) : string = 
     let _stmt = List.nth ast 0 in
@@ -248,17 +256,12 @@ let gen_from_stmt gen (ast: statement) = match ast with
         inner next rest
     in
     let final = inner gen ast in
-    (* let final = gen_add_ten "5" final in *)
     let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
-    (* let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in *)
-    let output = final.instructions in
+    let output = generate_begin ^ generate_startup ^  final.instructions ^ generate_end ^ generate_exit in
+    (* let output = final.instructions in *)
     output
 
 end
-
-
-
-
 
 type target = AMD64 | AARCH_64 | RISCV | JS | WASM (* Target platforms that I'd like to support *)
 
@@ -277,16 +280,18 @@ let compile ~target filepath (_ast: statement list) =
   Printf.fprintf ch "%s" gen.instructions 
 
 let test_gen () = 
-  let s = "let a = (10 + 10) * (10 * 5)\n" in
+  let s = "let a = (10 + 10) * 20\n" in
   let ast = s |> tokenise |> parse in
   print_endline "List: "; List.iter print_stmt ast;
-  let gen = JS_Backend.new_generator "output.js" in
+  let gen = X64_Backend.new_generator "output.s" in
+  (* let gen = JS_Backend.new_generator "output.js" in *)
   print_endline "Before:";
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
   print_endline "After:";
-  let ast = s |> tokenise |> parse |> Optimise.constant_fold in List.iter print_stmt ast; print_newline ();
+  let ast = s |> tokenise |> parse in List.iter print_stmt ast; print_newline ();
   printf "Num temp vars: %d\n" !temp_v_counter;
-  let asm = ast |> Optimise.constant_fold |> JS_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
+  (* let asm = ast |> Optimise.constant_fold |> JS_Backend.codegen gen in tokenise -> parse -> generate assembly *)
+  let asm = ast |> Optimise.constant_fold |> X64_Backend.codegen gen in
   printf "Instruction count: %d\n" gen.instruction_count;
   let ch = open_out gen.filepath in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

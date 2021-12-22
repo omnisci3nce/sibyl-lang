@@ -29,11 +29,11 @@ type value =
 exception Syntax_error of string
 
 let rec string_of_expr e = match e with
-    | IntConst i ->  "num_literal " ^ (string_of_int i)
-    (* | Let e -> "Let (" ^ string_of_expr e.expr *)
+    | IntConst i ->  "IntConst " ^ (string_of_int i)
+    (* |  e -> "Let (" ^ string_of_expr e.expr *)
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
-    | Grouping _ -> "Grouping"
+    | Grouping e -> Printf.sprintf "Grouping (%s)" (string_of_expr e.expr) 
     | _ -> "unknown expr"
 
 let print_stmt s = match s with
@@ -48,7 +48,8 @@ let print_stmt s = match s with
     | Var v -> print_endline ("Print " ^ v)
     | _ -> print_endline "dunno"
   end
-  | _ -> print_endline ""
+  | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
+  (* | _ -> print_endline "" *)
 
 let at_end t = List.length t = 0
 

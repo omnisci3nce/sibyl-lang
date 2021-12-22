@@ -1,3 +1,2 @@
-  let __temp1 = 6*10
-  a = __temp1
+  a = 1000
   console.log(a)

@@ -2,6 +2,7 @@
 
 open Lexer
 open Parser
+open Printf
 (* open Helpers *)
 let _STACK_SIZE = 1024
 
@@ -173,7 +174,8 @@ let gen_add_ten _a gen =
   ") in
   gen
 
-let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
+(* let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]" *)
+let var _g s = s
 
 let rec gen_from_expr gen expr : (generator * string) = match expr with
   | Grouping e -> gen_from_expr gen e.expr
@@ -196,11 +198,12 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
         let (new_gen, temp_name) = gen_from_expr gen e in
         let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
         new_gen, name
-      
-      (* Or *)
-      (* Expr + Num *)
-     
-      | _ -> failwith "Cant add these types"
+      | le, re ->
+        let (new_gen, left_temp_name) = gen_from_expr gen le in
+        let new_gen, right_temp_name = gen_from_expr new_gen re in
+        let name, _ = gen_plus_op left_temp_name right_temp_name new_gen in
+        new_gen, name
+      (* | _ -> failwith (Printf.sprintf "Cant add these types [%s] + [%s]" (string_of_expr b.left_expr) (string_of_expr b.right_expr)) *)
     end
     | t when t.token_type = Star -> begin
       match b.left_expr, b.right_expr with
@@ -216,11 +219,17 @@ let rec gen_from_expr gen expr : (generator * string) = match expr with
         let (new_gen, temp_name) = gen_from_expr gen e in
         let (name, _offset) = gen_mult_op (string_of_int a) (var new_gen temp_name) new_gen in
         new_gen, name
-      | _ -> failwith "Cant multiply these types"
+      | le, re ->
+        let (new_gen, left_temp_name) = gen_from_expr gen le in
+        let new_gen, right_temp_name = gen_from_expr new_gen re in
+        let name, _ = gen_mult_op left_temp_name right_temp_name new_gen in
+        new_gen, name
+      (* | _ -> failwith "Cant multiply these types" *)
     end
     | _ -> failwith "todo : implement this operator for binary expression"
   end
-  | _ -> gen, "todo: handle this expression in generator"
+  | IntConst x -> gen, (string_of_int x)
+  | _ -> failwith "todo: handle this expression in generator"
 
 (* let generate_copy_ident target name gen = 
   gen
@@ -283,15 +292,16 @@ let compile ~target filepath (_ast: statement list) =
   Printf.fprintf ch "%s" gen.asm 
 
 let test_gen () = 
-  let s = "let a = 6 * 10\n" in
-  (* let ast = s |> tokenise |> parse in
-  List.iter print_stmt ast; *)
+  let s = "let a = (10 + 10) * (10 * 5)\n" in
+  let ast = s |> tokenise |> parse in
+  print_endline "List: "; List.iter print_stmt ast;
   let gen = new_generator "output.js" in
-  (* print_endline "Parsed:"; *)
+  print_endline "Before:";
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
-  (* print_string "Num temp vars: "; print_int !temp_v_counter; print_newline (); *)
-  let asm = ast |> codegen gen in (* tokenise -> parse -> generate assembly *)
-  (* print_string "Instruction count: "; print_int gen.instruction_count; print_newline (); *)
+  print_endline "After:";
+  let ast = s |> tokenise |> parse |> Optimise.constant_fold in List.iter print_stmt ast; print_newline ();
+  printf "Num temp vars: %d\n" !temp_v_counter;
+  let asm = ast |> Optimise.constant_fold |> codegen gen in (* tokenise -> parse -> generate assembly *)
+  printf "Instruction count: %d\n" gen.instruction_count;
   let ch = open_out gen.filepath in
-  Printf.fprintf ch "%s" asm 
-  (* write assembly to file *)
+  Printf.fprintf ch "%s" asm (* write assembly to file *)

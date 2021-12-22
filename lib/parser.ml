@@ -110,8 +110,8 @@ let parse_statement tokens = match tokens with
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let ex, remaining_t = parse_expression rest in
       LetDecl { identifier = lexeme; expr = ex}, remaining_t
-  (* | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
-    Print (Var v.lexeme), rest *)
+  | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
+    Print (Var v.lexeme), rest
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []
 

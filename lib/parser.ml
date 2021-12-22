@@ -34,7 +34,9 @@ let rec string_of_expr e = match e with
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
     | Grouping e -> Printf.sprintf "Grouping (%s)" (string_of_expr e.expr) 
-    | _ -> "unknown expr"
+    | Unary _ -> "Unary"
+    | Var s -> "Var: " ^ s
+    | If _ -> "If"
 
 let print_stmt s = match s with
   | Expression e ->

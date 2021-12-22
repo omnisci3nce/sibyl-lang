@@ -1,6 +1,7 @@
 open Paper.Lexer
 open Paper.Parser
 open Paper.Codegen
+open Paper.Optimise
 
 let run _ = ()
 
@@ -16,7 +17,7 @@ let run_file filename =
   let gen = JS_Backend.new_generator "output.js" in
   let t = tokenise source in List.iter print_token t;
   let ast = parse t in List.iter print_stmt ast;
-  let asm = source |> tokenise |> parse |> JS_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
+  let asm = source |> tokenise |> parse |> constant_fold |> JS_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
   print_string "tokenise -> parse -> generate assembly";
   let ch = open_out "output.js" in
   print_endline " -> write to file";

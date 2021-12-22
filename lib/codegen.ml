@@ -180,6 +180,12 @@ module Backend (CG : CodeGenerator) = struct
           let (name, _) = gen_plus_op (string_of_int a) (string_of_int b) gen in
           (* print_hashtbl gen.variables; *)
           gen, name
+        | IntConst a, Var b ->
+          let temp_name, _ = alloc_temp_var gen in
+          let new_gen = gen_copy_ident temp_name (var gen b) gen in
+          let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
+          new_gen, name
+
         (* Num + Expr *)
         | IntConst a, e ->
           let (new_gen, temp_name) = gen_from_expr gen e in
@@ -199,7 +205,7 @@ module Backend (CG : CodeGenerator) = struct
       end
       | t when t.token_type = Star -> begin
         match b.left_expr, b.right_expr with
-        (* Num + Num *)
+        (* Num * Num *)
         | IntConst a, IntConst b ->
           let (name, _) = gen_mult_op (string_of_int a) (string_of_int b) gen in
           gen, name
@@ -216,7 +222,6 @@ module Backend (CG : CodeGenerator) = struct
           let new_gen, right_temp_name = gen_from_expr new_gen re in
           let name, _ = gen_mult_op left_temp_name right_temp_name new_gen in
           new_gen, name
-        (* | _ -> failwith "Cant multiply these types" *)
       end
       | _ -> failwith "todo : implement this operator for binary expression"
     end
@@ -244,9 +249,6 @@ module Backend (CG : CodeGenerator) = struct
               let new_gen = gen_copy_ident e.identifier name new_gen in
               new_gen
           end
-          (* print_hashtbl gen.variables; *)
-          (* let _ = generate_copy_ident e.identifier name gen in  *)
-          (* let _offset2 = Hashtbl.find new_gen.variables name in *)
     | Print e -> begin
       match e with
       | Var v -> gen_print v gen
@@ -263,7 +265,6 @@ module Backend (CG : CodeGenerator) = struct
         inner next rest
     in
     let final = inner gen ast in
-    (* let final = gen_print "a" final in TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
     let output = generate_begin ^ generate_entrypoint ^  final.instructions ^ generate_end ^ generate_exit in
     output
 end
@@ -289,13 +290,7 @@ let test_gen () =
   let ast = s |> tokenise |> parse in
   print_endline "List: "; List.iter print_stmt ast;
   let gen = X64_Backend.new_generator "output.s" in
-  (* let gen = JS_Backend.new_generator "output.js" in *)
-  print_endline "Before:";
-  let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
-  print_endline "After:";
-  let ast = s |> tokenise |> parse in List.iter print_stmt ast; print_newline ();
   printf "Num temp vars: %d\n" !temp_v_counter;
-  (* let asm = ast |> Optimise.constant_fold |> JS_Backend.codegen gen in tokenise -> parse -> generate assembly *)
   let asm = ast |> Optimise.constant_fold |> X64_Backend.codegen gen in
   printf "Instruction count: %d\n" gen.instruction_count;
   let ch = open_out gen.filepath in

@@ -13,10 +13,10 @@ let run_prompt () =
 
 let run_file filename =
   let source = filename |> read_whole_file in
-  let gen = new_generator "output.s" in
+  let gen = X64_Backend.new_generator "output.s" in
   (* let t = tokenise source in List.iter print_token t;
   let ast = parse t in List.iter print_stmt ast; *)
-  let asm = source |> tokenise |> parse |> codegen gen in (* tokenise -> parse -> generate assembly *)
+  let asm = source |> tokenise |> parse |> X64_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
   print_string "tokenise -> parse -> generate assembly";
   let ch = open_out "output.s" in
   print_endline " -> write to file";

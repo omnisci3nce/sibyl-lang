@@ -5,6 +5,7 @@ open Parser
 open Printf
 (* open Helpers *)
 let _STACK_SIZE = 1024
+let temp_v_counter = ref 0
 
 type generator = {
   variables: (string, int) Hashtbl.t;
@@ -50,7 +51,16 @@ let alloc_var var_name (g: generator) = if Hashtbl.mem g.variables var_name then
                                           Logs.debug (fun m -> m "[Codegen] Allocating variable '%s' at offset %d" var_name available);
                                           Hashtbl.add g.variables var_name available; available
 
-module JS_Backend : CodeGenerator = struct
+  let alloc_temp_var g = 
+    let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
+    if Hashtbl.mem g.variables var_name then
+      failwith "Var already exists!!!"
+    else let available = empty_var g 1 in
+      temp_v_counter := !temp_v_counter + 1;
+      Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
+      Hashtbl.add g.variables var_name available; (var_name, available)
+
+module JS_CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".js"
   let close_generator g = close_out g.channel
   let var _g s = s
@@ -68,10 +78,10 @@ module JS_Backend : CodeGenerator = struct
     in
     (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
-  let generate_copy_ident target name gen = gen |> emit (target ^ " = " ^ name)
+  let gen_copy_ident target name gen = gen |> emit (target ^ " = " ^ name)
 end
 
-module X64_Backend : CodeGenerator = struct
+module X64_CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".s"
   let close_generator g = close_out g.channel
   let var g s = "[rsp+" ^ string_of_int (Hashtbl.find g.variables s) ^ "]"
@@ -101,7 +111,7 @@ module X64_Backend : CodeGenerator = struct
     mov eax, 0        ; printf has varargs so eax counts num. of non-integer arguments being passed
     call printf
   ") gen
-  let generate_copy_ident target name gen = 
+  let gen_copy_ident target name gen = 
     gen
     |> emit ("mov rax, " ^ var gen name)
     |> emit ("mov " ^ var gen target ^ ", rax")
@@ -143,15 +153,11 @@ let generate_exit = "
 type calling_convention = Microsoft_x64 | System_V
 
 
-let temp_v_counter = ref 1
-let alloc_temp_var g = 
-  let var_name = ("__temp" ^ (string_of_int !temp_v_counter))  in
-  if Hashtbl.mem g.variables var_name then
-    failwith "Var already exists!!!"
-  else let available = empty_var g 1 in
-    temp_v_counter := !temp_v_counter + 1;
-    Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
-    Hashtbl.add g.variables var_name available; (var_name, available)
+
+module Backend (CG : CodeGenerator) = struct
+  include CG
+
+
 
 let rec gen_from_expr gen expr : (generator * string) = match expr with
   | Grouping e -> gen_from_expr gen e.expr
@@ -224,7 +230,7 @@ let gen_from_stmt gen (ast: statement) = match ast with
         (* print_hashtbl gen.variables; *)
         (* let _ = generate_copy_ident e.identifier name gen in  *)
         (* let _offset2 = Hashtbl.find new_gen.variables name in *)
-        let new_gen = generate_copy_ident e.identifier name new_gen in
+        let new_gen = gen_copy_ident e.identifier name new_gen in
         new_gen
   | Print e -> begin
     match e with
@@ -233,23 +239,31 @@ let gen_from_stmt gen (ast: statement) = match ast with
   end
   | _ -> gen
 
+  let codegen gen (ast: statement list) : string = 
+    let _stmt = List.nth ast 0 in
+    let rec inner gen stmts = match stmts with
+      | [] -> gen
+      | s :: rest ->
+        let next = gen_from_stmt gen s in
+        inner next rest
+    in
+    let final = inner gen ast in
+    (* let final = gen_add_ten "5" final in *)
+    let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
+    (* let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in *)
+    let output = final.instructions in
+    output
 
-let codegen gen (ast: statement list) : string = 
-  let _stmt = List.nth ast 0 in
-  let rec inner gen stmts = match stmts with
-    | [] -> gen
-    | s :: rest ->
-      let next = gen_from_stmt gen s in
-      inner next rest
-  in
-  let final = inner gen ast in
-  (* let final = gen_add_ten "5" final in *)
-  let final = gen_print "a" final in (* TODO: fix print statement parsing so I dont have to tack this on manually at the end *)
-  (* let output = generate_begin ^ generate_startup ^  final.asm ^ generate_end ^ generate_exit in *)
-  let output = final.instructions in
-  output
+end
+
+
+
+
 
 type target = AMD64 | AARCH_64 | RISCV | JS | WASM (* Target platforms that I'd like to support *)
+
+module X64_Backend = Backend (X64_CodeGen)
+module JS_Backend = Backend (JS_CodeGen)
 
 let compile ~target filepath (_ast: statement list) =
   let gen = match target with
@@ -266,13 +280,13 @@ let test_gen () =
   let s = "let a = (10 + 10) * (10 * 5)\n" in
   let ast = s |> tokenise |> parse in
   print_endline "List: "; List.iter print_stmt ast;
-  let gen = new_generator "output.js" in
+  let gen = JS_Backend.new_generator "output.js" in
   print_endline "Before:";
   let ast = s |> tokenise |> parse  in List.iter print_stmt ast; print_newline ();
   print_endline "After:";
   let ast = s |> tokenise |> parse |> Optimise.constant_fold in List.iter print_stmt ast; print_newline ();
   printf "Num temp vars: %d\n" !temp_v_counter;
-  let asm = ast |> Optimise.constant_fold |> codegen gen in (* tokenise -> parse -> generate assembly *)
+  let asm = ast |> Optimise.constant_fold |> JS_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
   printf "Instruction count: %d\n" gen.instruction_count;
   let ch = open_out gen.filepath in
   Printf.fprintf ch "%s" asm (* write assembly to file *)

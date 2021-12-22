@@ -1,4 +1,4 @@
 (executable
  (public_name paper)
- (name main)
+ (name spring)
  (libraries paper logs))

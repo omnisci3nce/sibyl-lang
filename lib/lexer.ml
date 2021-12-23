@@ -15,6 +15,7 @@ type token_type =
   | GreaterThan
   | LessThan
   | Bang
+  | Comma
 
   (* two char tokens *)
   | EqualEqual
@@ -47,6 +48,7 @@ let keywords = [
   Star, "Star";
   Slash, "Slash";
   Equal, "Equal";
+  Comma, "Comma";
   Let, "Let";
   Identifier, "Ident";
   Number, "Number";
@@ -72,7 +74,7 @@ type token = {
   literal: literal_type option;
   location: location;
   token_type: token_type;
-  }
+}
 let str_of_token t = Printf.sprintf "%s at line/col %d/%d" (str_of_token_type t.token_type) t.location.line t.location.column
     
 type lexer_context = {
@@ -147,6 +149,7 @@ let scan_next ctx tokens =
   | ')' -> add_token RightParen ")" None tokens ctx.line ctx.start; ctx
   | '{' -> add_token LeftBrace "(" None tokens ctx.line ctx.start; ctx
   | '}' -> add_token RightBrace ")" None tokens ctx.line ctx.start; ctx
+  | ',' -> add_token Comma "," None tokens ctx.line ctx.start; ctx
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
   | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx

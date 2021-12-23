@@ -20,7 +20,7 @@ type expr =
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; expr: expr }
-  | FunctionDecl of { name: string; }
+  | FunctionDecl of { name: string; arguments: token list; body: statement list }
   | Print of expr
   
 type program = statement list
@@ -108,13 +108,16 @@ and parse_term tokens =
       let ex, rem = parse_term (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> expr, remaining
+and parse_comparison tokens =
+  let expr, remaining = parse_term tokens in
+  expr, remaining
 
 and parse_equality tokens =
-    let (expr, remaining) = parse_term tokens in
+    let (expr, remaining) = parse_comparison tokens in
     printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline ();
     match match_next remaining [EqualEqual] with
     | Some t ->
-      let ex, rem = parse_term (List.tl remaining) in
+      let ex, rem = parse_comparison (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
     | _ -> print_string ":O\n"; expr, remaining
 
@@ -124,18 +127,49 @@ and parse_expression tokens = match tokens with
     parse_expression rest
   | _ -> parse_equality tokens
 
-and parse_function tokens =
+and parse_function tokens : (statement list * token list * token list) =
   match match_next tokens [LeftParen] with
   | Some _ -> begin
     let rest = List.tl tokens in
     (* TODO: get parameters *)
-    match match_next rest [RightParen] with
-    | Some _ -> [], (List.tl rest)
+
+    let rec parse_params tokens = match tokens with
+      | h :: r when h.token_type = Identifier -> begin
+          match match_next r [Comma] with
+          | Some _ ->
+            let next, rem = parse_params r in
+            [h] @ next, List.tl rem
+          | _ -> [h], r
+        end
+      | _ -> [], tokens
+    in
+
+    let params, remaining = parse_params rest in
+
+    match match_next remaining [RightParen] with
+    | Some _ -> begin
+        (* function body *)
+        let rest = List.tl remaining in
+        match match_next rest [LeftBrace] with
+        | Some _ ->
+          let statements = ref [] in
+          let rec parse_f_body tokens = (match tokens with
+            | [] -> failwith "you need a closing brace"
+            | h :: r when h.token_type = RightBrace -> r
+            | _ -> 
+              let stmt, rem = parse_statement tokens in
+              statements := !statements @ [stmt];
+              parse_f_body rem
+          ) in
+          let rem = parse_f_body (List.tl rest) in
+          !statements, params, rem
+        | None -> failwith "no function body"
+      end
     | None -> failwith "parse arguments to be implemented"
   end
   | None -> failwith "Expected left paren after a function keyword"
 
-let parse_statement tokens = match tokens with
+and parse_statement tokens = match tokens with
   (* starts a let statement *)
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let ex, remaining_t = parse_expression rest in
@@ -145,8 +179,8 @@ let parse_statement tokens = match tokens with
     Print (Var v.lexeme), rest
   (* starts a function declaration statement *)
   | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
-    let _body, remaining = parse_function rest in
-    FunctionDecl { name = lexeme }, remaining
+    let body, args, remaining = parse_function rest in
+    FunctionDecl { name = lexeme; arguments = args; body = body }, remaining
     
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []

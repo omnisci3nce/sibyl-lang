@@ -11,10 +11,12 @@ let expr_eq a b = let open Parser in match a, b with
 
 let expr_testable = Alcotest.testable pprint_expr expr_eq
 
+
 let pprint_stmt ppf stmt = let open Parser in match stmt with
   | Expression _ -> Fmt.pf ppf ""
   | LetDecl _ -> Fmt.pf ppf ""
-  | FunctionDecl f -> Fmt.pf ppf "Function %s" f.name
+  | FunctionDecl f -> Fmt.pf ppf "Function %s -- args: %d -- stmts: %d"
+      f.name (List.length f.arguments) (List.length f.body)
   | Print _ -> Fmt.pf ppf ""
 let stmt_eq a b = a = b
 let stmt_testable = Alcotest.testable pprint_stmt stmt_eq
@@ -39,6 +41,12 @@ let test_add_two_numbers () =
   let expected_expr = make_binary (IntConst 5) (IntConst 5) "+" Plus in
   Alcotest.(check expr_testable) "success" expected_expr expr 
 
+(* let test_empty_block () =
+  let source = "{}\n" in
+  let ts = Lexer.tokenise source in
+  let stmt, _rem = Parser.parse_statement ts in
+  let expected_output = Parser. *)
+
 let test_declare_empty_function () =
   let source = "
   fn hello() {
@@ -47,8 +55,54 @@ let test_declare_empty_function () =
   " in
   let ts = Lexer.tokenise source in
   let stmt, _rem = Parser.parse_statement ts in
-  let expected_output = Parser.FunctionDecl { name = "hello" } in
+  let expected_output = Parser.FunctionDecl {
+    name = "hello";
+    arguments = [];
+    body = []
+  } in
   Alcotest.(check stmt_testable) "Correct function name" expected_output stmt
+
+let test_one_statement_in_function () =
+  let source = "
+  fn hello() {
+    let a = 10
+  }
+  " in
+  let ts = Lexer.tokenise source in
+  let stmt, _rem = Parser.parse_statement ts in
+  let expected_output = Parser.FunctionDecl {
+    name = "hello";
+    arguments = [];
+    body = [
+      Parser.LetDecl {
+        identifier = "a";
+        expr = Parser.IntConst 10
+      }
+    ]
+  } in
+    Alcotest.(check stmt_testable) "Correct function body statement" expected_output stmt
+  
+(* let test_parse_params () = *)
+  (* let tokens = [] *)
+
+let test_one_param_func () =
+  let source = "
+  fn hello (a) {
+  }
+  " in
+  let ts = Lexer.tokenise source in
+  let stmt, _rem = Parser.parse_statement ts in
+  let expected_output = Parser.FunctionDecl {
+    name = "hello";
+    arguments = [{
+      lexeme = "a";
+      literal = None;
+      location = { line = 1; column = 0};
+      token_type = Lexer.Identifier;
+    }];
+    body = []
+  } in
+    Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
 let dummy_test () =
   ()
@@ -66,7 +120,9 @@ let () =
       test_case "TODO" `Quick dummy_test
     ];
     "Functions", [
-      test_case "Empty function declaration" `Quick test_declare_empty_function
+      test_case "Empty function declaration" `Quick test_declare_empty_function;
+      test_case "One statement in function body" `Quick test_one_statement_in_function;
+      test_case "One param" `Quick test_one_param_func
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

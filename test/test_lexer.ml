@@ -25,6 +25,15 @@ let test_empty_function_decl () = let open Lexer in
   let tts = Lexer.tokenise source |> token_types_only in
   Alcotest.(check (list token_type_testable)) "Decl Fn Hello" [Func; Identifier; LeftParen; RightParen; LeftBrace; RightBrace] tts
 
+let test_func_with_one_param () = let open Lexer in
+  let source = "
+  fn hello (a) {}
+  " in
+  let tts = tokenise source |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "Decl Fn Hello a" [
+    Func; Identifier; LeftParen; Identifier; RightParen; LeftBrace; RightBrace
+  ] tts
+
 let test_line_numbers () = let open Lexer in
   let source = "let a = 5\nlet b = 5\n" in
   let ctx, _ = tokenise_ source in
@@ -39,5 +48,8 @@ let () =
         test_case "line numbers" `Quick test_line_numbers
      ];
       "basic comparison", [ test_case "Comparison" `Quick test_comparison ];
-      "basic function declaration", [ test_case "Empty" `Quick test_empty_function_decl ]
+      "basic function declaration", [
+        test_case "Empty" `Quick test_empty_function_decl;
+        test_case "1 param" `Quick test_func_with_one_param
+      ]
     ]

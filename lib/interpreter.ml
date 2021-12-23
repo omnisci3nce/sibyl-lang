@@ -48,7 +48,12 @@ let rec evaluate (expr: expr) = match expr with
   | _ -> failwith "Unhandled expression"
 
 let test_interpret () =
-  let t = Lexer.tokenise "false == !true \n" in
+  let t = Lexer.tokenise "
+  fn hello() {
+    let a = 5
+    print a
+  }
+  " in
   printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline ();
   let e, _ = parse_expression t in
   print_string "Expression: "; print_endline (string_of_expr e);

@@ -215,7 +215,7 @@ let rec loop (acc: statement list) (ts: token list) =
   | [] -> acc
   | ts -> let stmt, remaining_tokens = parse_statement ts in
     loop (stmt :: acc) remaining_tokens
-  let parse (tokens: token list) : statement list =
+let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in
   List.rev stmts
 

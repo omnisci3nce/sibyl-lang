@@ -53,7 +53,9 @@ let keywords = [
   String, "String";
   True, "True";
   False, "False";
-  Func, "Func"
+  Func, "Func";
+  EqualEqual, "EqualEqual";
+  BangEqual, "BangEqual";
 ]
 let str_of_token_type t = List.assoc t keywords 
 
@@ -146,7 +148,11 @@ let scan_next ctx tokens =
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
   | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
-  | '!' -> add_token Bang "!" None tokens ctx.line ctx.start; ctx
+  | '!' -> (
+      match match_next ctx '=' with
+      | true  -> add_token BangEqual "!=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token Bang "!" None tokens ctx.line ctx.start; ctx
+  )
   | '=' -> (
       match match_next ctx '=' with
       | true  -> add_token EqualEqual "==" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)

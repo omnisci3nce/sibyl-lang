@@ -4,20 +4,20 @@ open Parser
 
 (* OCaml Runtime Values *)
 type value =
-  Number of int
+  Int of int
 
 let string_of_value = function
-  | Number x -> Printf.sprintf "Number %d" x
+  | Int x -> Printf.sprintf "Int %d" x
 
 let add left right = match left, right with
-  | Number x, Number y -> Number (x + y)
+  | Int x, Int y -> Int (x + y)
 let mult left right = match left, right with
-  | Number x, Number y -> Number (x * y)
+  | Int x, Int y -> Int (x * y)
 let sub left right = match left, right with
-  | Number x, Number y -> Number (x - y)
+  | Int x, Int y -> Int (x - y)
 
 let rec evaluate (expr: expr) = match expr with
-  | IntConst x -> Number x
+  | IntConst x -> Int x
   | Binary e ->
     let left = evaluate e.left_expr in
     let right = evaluate e.right_expr in

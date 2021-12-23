@@ -16,10 +16,20 @@ let test_comparison () =
   let tts = Lexer.tokenise "true != false\n" |> token_types_only in
   Alcotest.(check (list token_type_testable)) "BangEqual" [True; BangEqual; False] tts
 
+let test_empty_function_decl () = let open Lexer in
+  let source = "
+  fn hello() {
+
+  }
+  " in
+  let tts = Lexer.tokenise source |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "Decl Fn Hello" [Func; Identifier; LeftParen; RightParen; LeftBrace; RightBrace] tts
+
 (* Run it *)
 let () =
   let open Alcotest in
   run "Tests" [
       "basic tokenise", [ test_case "Single int literal" `Quick test_single_int_literal ];
-      "basic comparison", [ test_case "Comparison" `Quick test_comparison ]
+      "basic comparison", [ test_case "Comparison" `Quick test_comparison ];
+      "basic function declaration", [ test_case "Empty" `Quick test_empty_function_decl ]
     ]

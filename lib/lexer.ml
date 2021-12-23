@@ -57,22 +57,24 @@ let keywords = [
   EqualEqual, "EqualEqual";
   BangEqual, "BangEqual";
 ]
-let str_of_token_type t = List.assoc t keywords 
+let str_of_token_type t = List.assoc t keywords
+
 
 type literal_type = NumberLiteral of int | StringLiteral of string
 
 type location = {
   line: int;
   column: int
-}
-
+  }
+  
 type token = {
   lexeme: string;
   literal: literal_type option;
   location: location;
   token_type: token_type;
-}
-
+  }
+let str_of_token t = Printf.sprintf "%s at line/col %d/%d" (str_of_token_type t.token_type) t.location.line t.location.column
+    
 type lexer_context = {
   source: string;
   start: int;   (* first character in the lexeme being scanned *)

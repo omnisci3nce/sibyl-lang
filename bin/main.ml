@@ -2,6 +2,7 @@ open Paper.Lexer
 open Paper.Parser
 open Paper.Codegen
 open Paper.Optimise
+open Paper.Interpreter
 
 let run _ = ()
 
@@ -15,8 +16,8 @@ let run_prompt () =
 let run_file filename =
   let source = filename |> read_whole_file in
   let gen = JS_Backend.new_generator "output.js" in
-  let t = tokenise source in List.iter print_token t;
-  let ast = parse t in List.iter print_stmt ast;
+  let t = tokenise source in
+  let ast = parse t in List.iter print_stmt ast; print_newline ();
   let asm = source |> tokenise |> parse |> constant_fold |> JS_Backend.codegen gen in (* tokenise -> parse -> generate assembly *)
   print_string "tokenise -> parse -> generate assembly";
   let ch = open_out "output.js" in
@@ -38,7 +39,7 @@ let () =
   Logs.debug (fun m -> m "Would you mind to be debugged a bit ?");
   Logs.app (fun m -> m "This is for the application console or stdout."); *)
   match Array.length Sys.argv with
-  | 1 -> test_gen ()
+  | 1 -> test_interpret ()
   | 2 -> 
     run_file (Array.get Sys.argv 1)
   | _ -> print_endline "Usage: paper [script]"; exit 64;

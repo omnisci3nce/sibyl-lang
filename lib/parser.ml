@@ -1,6 +1,7 @@
 (* Parse tokens from the lexer for syntax correctness and convert to an abstract syntax tree *)
 
 open Lexer
+open Printf
 
 (* Types *)
 type expr =
@@ -18,19 +19,15 @@ type expr =
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; expr: expr }
-  (* | FunctionDecl of { name: string; } *)
+  | FunctionDecl of { name: string; }
   | Print of expr
   
 type program = statement list
 
-type value =
-  | Int
-      
 exception Syntax_error of string
 
 let rec string_of_expr e = match e with
     | IntConst i ->  "IntConst " ^ (string_of_int i)
-    (* |  e -> "Let (" ^ string_of_expr e.expr *)
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
     | Unit -> "Unit"
     | Grouping e -> Printf.sprintf "Grouping (%s)" (string_of_expr e.expr) 
@@ -42,7 +39,6 @@ let print_stmt s = match s with
   | Expression e ->
     begin
     match e with
-    (* | Let a -> print_string ("Assign to '" ^ a.identifier ^ "' "); print_endline (string_of_expr a.expr) *)
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
     | _ -> print_string (string_of_expr e)
     end
@@ -51,6 +47,7 @@ let print_stmt s = match s with
     | _ -> print_endline "dunno"
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
+  | FunctionDecl _ -> printf "Function: "
   (* | _ -> print_endline "" *)
 
 let at_end t = List.length t = 0
@@ -107,13 +104,30 @@ and parse_expression tokens = match tokens with
     parse_expression rest
   | _ -> parse_term tokens
 
+and parse_function tokens =
+  match match_next tokens [LeftParen] with
+  | Some _ -> begin
+    let rest = List.tl tokens in
+    (* TODO: get parameters *)
+    match match_next rest [RightParen] with
+    | Some _ -> [], (List.tl rest)
+    | None -> failwith "parse arguments to be implemented"
+  end
+  | None -> failwith "Expected left paren after a function keyword"
+
 let parse_statement tokens = match tokens with
-  (* starts a let *)
+  (* starts a let statement *)
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let ex, remaining_t = parse_expression rest in
       LetDecl { identifier = lexeme; expr = ex}, remaining_t
+  (* starts a print statement *)
   | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest
+  (* starts a function declaration statement *)
+  | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
+    let _body, remaining = parse_function rest in
+    FunctionDecl { name = lexeme }, remaining
+    
   (* If its not a declaration, we assume its an expression *)
   | _ -> Expression Unit, []
 

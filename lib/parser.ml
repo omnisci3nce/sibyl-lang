@@ -86,11 +86,18 @@ let rec parse_primary tokens =
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
+and parse_unary tokens =
+  match match_next tokens [Bang] with
+  | Some t -> (* we have a unary *)
+    let (right, rem) = parse_unary (List.tl tokens) in
+    Unary { operator = t; expr = right }, rem
+  | _ -> parse_primary tokens
+
 and parse_factor tokens = 
-  let (expr, remaining) = parse_primary tokens in
+  let (expr, remaining) = parse_unary tokens in
   match match_next remaining [Star; Slash] with
   | Some t ->
-    let (ex, rem) = parse_primary (List.tl remaining) in
+    let (ex, rem) = parse_unary (List.tl remaining) in
     Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> (expr, remaining)
     
@@ -107,7 +114,6 @@ and parse_equality tokens =
     printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline ();
     match match_next remaining [EqualEqual] with
     | Some t ->
-      print_string "HERE\n";
       let ex, rem = parse_term (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
     | _ -> print_string ":O\n"; expr, remaining

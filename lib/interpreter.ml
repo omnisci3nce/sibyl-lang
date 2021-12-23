@@ -15,6 +15,15 @@ let string_of_value = function
 let rec evaluate (expr: expr) = match expr with
   | IntConst x -> Int x
   | Bool b -> Bool b
+  | Unary u -> begin
+      match u.operator.token_type with
+      | Bang -> (
+        match u.expr with
+        | Bool b -> Bool (not b)
+        | _ -> failwith "dunno"
+        )
+        | _ -> failwith ""
+    end
   | Binary e ->
     let left = evaluate e.left_expr in
     let right = evaluate e.right_expr in
@@ -36,10 +45,10 @@ let rec evaluate (expr: expr) = match expr with
     | _ -> failwith "types dont match or coerce"
     )
   | Grouping e -> evaluate e.expr
-  | _ -> failwith "jhjjjj"
+  | _ -> failwith "Unhandled expression"
 
 let test_interpret () =
-  let t = Lexer.tokenise "true == 4 \n" in
+  let t = Lexer.tokenise "false == !true \n" in
   printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline ();
   let e, _ = parse_expression t in
   print_string "Expression: "; print_endline (string_of_expr e);

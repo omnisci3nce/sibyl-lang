@@ -15,6 +15,7 @@ type expr =
   | Var of string
   | If of expr * expr * expr
   | Unit
+  | Call of { callee: expr; arguments: token list }
   and literal = (string * literal_type)
 
 type statement =
@@ -36,6 +37,7 @@ let rec string_of_expr e = match e with
     | Var s -> "Var: " ^ s
     | If _ -> "If"
     | Bool b -> if b then "True" else "False"
+    | Call _ -> ""
 
 let print_stmt s = match s with
   | Expression e ->
@@ -86,12 +88,34 @@ let rec parse_primary tokens =
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
+and parse_call tokens =
+  let (expr, remaining) = parse_primary tokens in
+  match match_next remaining [LeftParen] with
+  | Some _ -> (
+  let rec parse_params tokens = match tokens with
+      | h :: r when h.token_type = Identifier -> begin
+          match match_next r [Comma] with
+          | Some _ ->
+            let next, rem = parse_params r in
+            [h] @ next, List.tl rem
+          | _ -> [h], r
+        end
+      | _ -> [], tokens
+    in
+  let params, remaining = parse_params (List.tl remaining) in
+  match match_next remaining [RightParen] with
+    | Some _ -> begin
+      Call { callee = expr; arguments = params }, List.tl remaining
+    end
+    | None -> failwith "closing parenthesis expected"
+  )
+  | None -> expr, remaining
 and parse_unary tokens =
   match match_next tokens [Bang] with
   | Some t -> (* we have a unary *)
     let (right, rem) = parse_unary (List.tl tokens) in
     Unary { operator = t; expr = right }, rem
-  | _ -> parse_primary tokens
+  | _ -> parse_call tokens
 
 and parse_factor tokens = 
   let (expr, remaining) = parse_unary tokens in
@@ -131,8 +155,8 @@ and parse_function tokens : (statement list * token list * token list) =
   match match_next tokens [LeftParen] with
   | Some _ -> begin
     let rest = List.tl tokens in
-    (* TODO: get parameters *)
-
+    
+    (* TODO: Move into its own top level function *)
     let rec parse_params tokens = match tokens with
       | h :: r when h.token_type = Identifier -> begin
           match match_next r [Comma] with
@@ -149,6 +173,7 @@ and parse_function tokens : (statement list * token list * token list) =
     match match_next remaining [RightParen] with
     | Some _ -> begin
         (* function body *)
+        (* TODO: Move into its own top level function for parsing blocks *)
         let rest = List.tl remaining in
         match match_next rest [LeftBrace] with
         | Some _ ->
@@ -189,7 +214,6 @@ let rec loop (acc: statement list) (ts: token list) =
   match ts with
   | [] -> acc
   | ts -> let stmt, remaining_tokens = parse_statement ts in
-  (* List.iter print_token remaining_tokens; print_newline (); *)
     loop (stmt :: acc) remaining_tokens
   let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in

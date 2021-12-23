@@ -41,12 +41,6 @@ let test_add_two_numbers () =
   let expected_expr = make_binary (IntConst 5) (IntConst 5) "+" Plus in
   Alcotest.(check expr_testable) "success" expected_expr expr 
 
-(* let test_empty_block () =
-  let source = "{}\n" in
-  let ts = Lexer.tokenise source in
-  let stmt, _rem = Parser.parse_statement ts in
-  let expected_output = Parser. *)
-
 let test_declare_empty_function () =
   let source = "
   fn hello() {
@@ -82,7 +76,7 @@ let test_one_statement_in_function () =
   } in
     Alcotest.(check stmt_testable) "Correct function body statement" expected_output stmt
   
-(* let test_parse_params () = *)
+(* TODO: let test_parse_params () = *)
   (* let tokens = [] *)
 
 let test_one_param_func () =
@@ -104,6 +98,16 @@ let test_one_param_func () =
   } in
     Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
+let test_function_call () =
+  let source = "hello()\n" in
+  let ts = Lexer.tokenise source in
+  let expr, _rem = Parser.parse_expression ts in
+  let expected_output = Parser.Call {
+    callee = Var "hello";
+    arguments = []
+  } in
+  Alcotest.(check expr_testable) "function call" expected_output expr
+
 let dummy_test () =
   ()
 
@@ -122,7 +126,8 @@ let () =
     "Functions", [
       test_case "Empty function declaration" `Quick test_declare_empty_function;
       test_case "One statement in function body" `Quick test_one_statement_in_function;
-      test_case "One param" `Quick test_one_param_func
+      test_case "One param" `Quick test_one_param_func;
+      test_case "Function call no params" `Quick test_function_call
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

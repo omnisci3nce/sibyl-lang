@@ -145,12 +145,16 @@ let scan_next ctx tokens =
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
   | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
-  | '=' -> if match_next ctx '=' then
-            add_token EqualEqual "=" None tokens ctx.line ctx.start else
-            add_token Equal "=" None tokens ctx.line ctx.start; ctx
-  | '<' -> if match_next ctx '=' then
-              add_token LesserEqual "<=" None tokens ctx.line ctx.start else
-              add_token LessThan "<" None tokens ctx.line ctx.start; ctx
+  | '=' -> (
+      match match_next ctx '=' with
+      | true  -> add_token EqualEqual "==" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token Equal "=" None tokens ctx.line ctx.start; ctx
+  )
+  | '<' -> (
+      match match_next ctx '=' with
+      | true  -> add_token LesserEqual "<=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token LessThan "<" None tokens ctx.line ctx.start; ctx
+  )
   | '/' -> 
     let rec comment_out c =
       if is_at_end c || Char.equal (peek c) '\n' then

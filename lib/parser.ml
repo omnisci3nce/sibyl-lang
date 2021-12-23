@@ -6,6 +6,7 @@ open Printf
 (* Types *)
 type expr =
   | IntConst of int
+  | Bool of bool
   (* | StringConst of string *)
   (* | Let of { identifier: string; expr: expr } *)
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
@@ -34,6 +35,7 @@ let rec string_of_expr e = match e with
     | Unary _ -> "Unary"
     | Var s -> "Var: " ^ s
     | If _ -> "If"
+    | Bool b -> if b then "True" else "False"
 
 let print_stmt s = match s with
   | Expression e ->
@@ -79,6 +81,8 @@ let rec parse_primary tokens =
       | h :: r when h.token_type = RightParen -> Grouping { expr = expr }, r
       | _ -> failwith "right paren expected"
     end
+  | h :: r when h.token_type = True -> Bool true, r
+  | h :: r when h.token_type = False -> Bool false, r
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
@@ -98,11 +102,21 @@ and parse_term tokens =
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> expr, remaining
 
+and parse_equality tokens =
+    let (expr, remaining) = parse_term tokens in
+    printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline ();
+    match match_next remaining [EqualEqual] with
+    | Some t ->
+      print_string "HERE\n";
+      let ex, rem = parse_term (List.tl remaining) in
+      Binary { left_expr = expr; operator = t; right_expr = ex }, rem
+    | _ -> print_string ":O\n"; expr, remaining
+
 and parse_expression tokens = match tokens with
   | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
   (*  TODO print *)
     parse_expression rest
-  | _ -> parse_term tokens
+  | _ -> parse_equality tokens
 
 and parse_function tokens =
   match match_next tokens [LeftParen] with

@@ -5,8 +5,20 @@ let pprint_expr ppf e = let open Parser in match e with
   | Binary b -> Fmt.pf ppf "Binary %s ( %s %s)" (Lexer.str_of_token b.operator) (string_of_expr b.left_expr) (string_of_expr b.right_expr)
   | _ ->  Fmt.pf ppf ""
 
-let expr_eq a b = a = b
+let expr_eq a b = let open Parser in match a, b with
+  | Binary e1, Binary e2 -> e1.operator.token_type = e2.operator.token_type (* ignore location etc *)
+  | _ -> a = b
+
 let expr_testable = Alcotest.testable pprint_expr expr_eq
+
+let pprint_stmt ppf stmt = let open Parser in match stmt with
+  | Expression _ -> Fmt.pf ppf ""
+  | LetDecl _ -> Fmt.pf ppf ""
+  | FunctionDecl f -> Fmt.pf ppf "Function %s" f.name
+  | Print _ -> Fmt.pf ppf ""
+let stmt_eq a b = a = b
+let stmt_testable = Alcotest.testable pprint_stmt stmt_eq
+
 
 let test_at_end () =
   Alcotest.(check bool) "empty list" true (Parser.at_end []);
@@ -27,7 +39,16 @@ let test_add_two_numbers () =
   let expected_expr = make_binary (IntConst 5) (IntConst 5) "+" Plus in
   Alcotest.(check expr_testable) "success" expected_expr expr 
 
-(* let test_declare_empty_function () = *)
+let test_declare_empty_function () =
+  let source = "
+  fn hello() {
+
+  }
+  " in
+  let ts = Lexer.tokenise source in
+  let stmt, _rem = Parser.parse_statement ts in
+  let expected_output = Parser.FunctionDecl { name = "hello" } in
+  Alcotest.(check stmt_testable) "Correct function name" expected_output stmt
 
 let dummy_test () =
   ()
@@ -45,7 +66,7 @@ let () =
       test_case "TODO" `Quick dummy_test
     ];
     "Functions", [
-      test_case "TODO" `Quick dummy_test
+      test_case "Empty function declaration" `Quick test_declare_empty_function
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

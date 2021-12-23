@@ -65,7 +65,7 @@ type literal_type = NumberLiteral of int | StringLiteral of string
 type location = {
   line: int;
   column: int
-  }
+}
   
 type token = {
   lexeme: string;
@@ -198,23 +198,26 @@ let scan_next ctx tokens =
 let scan_identifier x = x
 
 
-let tokenise (source: string): token list =
+let tokenise_ (source: string) : lexer_context * token list =
   let ctx: lexer_context = {
-    source;
-    start = 0;
-    current = 0;
-    line = 0;
-  } in
-  let tokens = ref [] in
-  let rec loop ctx = (* loop until we're at the end of the source code *)
-    if is_at_end ctx then
-      ctx
-    else
-      let t = scan_next ctx tokens in
-      loop (advance t) in
+      source;
+      start = 0;
+      current = 0;
+      line = 0;
+    } in
+    let tokens = ref [] in
+    let rec loop ctx = (* loop until we're at the end of the source code *)
+      if is_at_end ctx then
+        ctx
+      else
+        let t = scan_next ctx tokens in
+        loop (advance t) in
+  let final = loop ctx in
+  final, !tokens
 
-  let _final = loop ctx in
-  List.rev !tokens
+let tokenise (source: string): token list =
+  let _ctx, tokens = tokenise_ source in
+  List.rev tokens
 
 let read_whole_file filename =
   let channel = open_in filename in

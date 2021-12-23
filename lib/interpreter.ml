@@ -1,8 +1,8 @@
-(* Evaluate Paper code with JS  *)
+(* Evaluate Paper code with OCaml  *)
 
 open Parser
 
-(* JS Runtime Values *)
+(* OCaml Runtime Values *)
 type value =
   Number of int
 

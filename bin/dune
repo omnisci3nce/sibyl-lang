@@ -1,4 +1,4 @@
 (executable
  (public_name paper)
  (name main)
- (libraries paper logs))
+ (libraries paper experiment logs))

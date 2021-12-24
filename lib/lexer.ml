@@ -34,6 +34,8 @@ type token_type =
   | False
   | Func
   | Constrain
+  | If
+  | Return
 
   | EOF
 
@@ -58,6 +60,8 @@ let keywords = [
   Func, "Func";
   EqualEqual, "EqualEqual";
   BangEqual, "BangEqual";
+  If, "If";
+  Return, "Return"
 ]
 let str_of_token_type t = List.assoc t keywords
 
@@ -189,6 +193,8 @@ let scan_next ctx tokens =
     | "constrain" -> add_token Constrain "constrain" None tokens ctx.line ctx.start; new_ctx
     | "true" -> add_token True "constrain" None tokens ctx.line ctx.start; new_ctx
     | "false" -> add_token False (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
+    | "if" -> add_token If (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
+    | "return" -> add_token Return (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | _ -> add_token Identifier indent_string None tokens ctx.line ctx.start; new_ctx
     end
   | c when is_digit c ->

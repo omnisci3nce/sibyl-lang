@@ -23,6 +23,8 @@ type statement =
   | LetDecl of { identifier: string; expr: expr }
   | FunctionDecl of { name: string; arguments: token list; body: statement list }
   | Print of expr
+  | IfElse of { condition: expr; then_branch: statement; else_branch: statement }
+  | Return of { value: expr }
   
 type program = statement list
 
@@ -53,7 +55,7 @@ let print_stmt s = match s with
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
   | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name
-  (* | _ -> print_endline "" *)
+  | _ -> print_endline ""
 
 let at_end t = List.length t = 0
 

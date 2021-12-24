@@ -69,6 +69,8 @@ and evaluate_stmt func_env var_env stmt = match stmt with
       Hashtbl.add func_env f.name fv
   | Expression e -> let _ = evaluate func_env var_env e in ()
   | Print e -> let value = evaluate func_env var_env e in print_endline (string_of_value value)
+  | IfElse _ -> ()
+  | Return _ -> ()
 
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %s\n" x (string_of_value y))
 
@@ -90,7 +92,7 @@ let test_interpret () =
     evaluate_stmt func_env var_env stmt;
     (* print_stmt stmt; *)
   ) program;
-  (* print_hashtbl var_env *)
+  print_hashtbl var_env
   (* print_string "Expression: "; print_endline (string_of_expr e); *)
   (* let v = evaluate e in *)
   (* Printf.printf "Output: %s\n" (string_of_value v) *)

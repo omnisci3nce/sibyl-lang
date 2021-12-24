@@ -11,6 +11,12 @@ let token_types_only tokens = let open Lexer in List.map (fun t -> t.token_type)
 let test_single_int_literal () =
   let tts = Lexer.tokenise "5\n" |> token_types_only in
   Alcotest.(check (list token_type_testable)) "Number" [Number] tts
+let test_if () =
+  let tts = Lexer.tokenise "if\n" |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "If" [If] tts
+let test_return () =
+  let tts = Lexer.tokenise "return\n" |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "Return" [Return] tts
 
 let test_comparison () =
   let tts = Lexer.tokenise "true != false\n" |> token_types_only in
@@ -45,7 +51,9 @@ let () =
   run "Tests" [
       "basic tokenise", [ 
         test_case "Single int literal" `Quick test_single_int_literal;
-        test_case "line numbers" `Quick test_line_numbers
+        test_case "line numbers" `Quick test_line_numbers;
+        test_case "if" `Quick test_if;
+        test_case "return" `Quick test_return;
      ];
       "basic comparison", [ test_case "Comparison" `Quick test_comparison ];
       "basic function declaration", [

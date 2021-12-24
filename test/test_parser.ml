@@ -18,6 +18,7 @@ let pprint_stmt ppf stmt = let open Parser in match stmt with
   | FunctionDecl f -> Fmt.pf ppf "Function %s -- args: %d -- stmts: %d"
       f.name (List.length f.arguments) (List.length f.body)
   | Print _ -> Fmt.pf ppf ""
+  | _ -> Fmt.pf ppf ""
 let stmt_eq a b = a = b
 let stmt_testable = Alcotest.testable pprint_stmt stmt_eq
 
@@ -108,6 +109,13 @@ let test_function_call () =
   } in
   Alcotest.(check expr_testable) "function call" expected_output expr
 
+let test_return () =
+  let _source = "\n" in
+  Alcotest.(check pass) "" () ()
+
+let test_if_else () =
+  Alcotest.(check pass) "" () ()
+
 let dummy_test () =
   ()
 
@@ -121,13 +129,14 @@ let () =
       test_case "binary plus" `Quick test_add_two_numbers
     ];
     "Control flow", [
-      test_case "TODO" `Quick dummy_test
+      test_case "If else" `Quick test_if_else
     ];
     "Functions", [
       test_case "Empty function declaration" `Quick test_declare_empty_function;
       test_case "One statement in function body" `Quick test_one_statement_in_function;
       test_case "One param" `Quick test_one_param_func;
-      test_case "Function call no params" `Quick test_function_call
+      test_case "Function call no params" `Quick test_function_call;
+      test_case "return" `Quick test_return
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

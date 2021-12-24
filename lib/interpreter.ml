@@ -42,10 +42,13 @@ let rec evaluate (expr: expr) = match expr with
         | EqualEqual -> Bool (a = b)
         | _ -> Bool true
       end
-    | _ -> failwith "types dont match or coerce"
+    | _ -> failwith "[Runtime Error] types dont match or coerce"
     )
   | Grouping e -> evaluate e.expr
   | _ -> failwith "Unhandled expression"
+
+(* let evaluate_stmt = function
+  | LetDecl _ ->  *)
 
 let test_interpret () =
   let t = Lexer.tokenise "
@@ -53,9 +56,14 @@ let test_interpret () =
     let a = 5
     print a
   }
+  hello()
   " in
   printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline ();
-  let e, _ = parse_expression t in
-  print_string "Expression: "; print_endline (string_of_expr e);
-  let v = evaluate e in
-  Printf.printf "Output: %s\n" (string_of_value v)
+  let program = parse t in
+  print_int (List.length program); print_newline ();
+  List.iter (fun stmt ->
+    print_stmt stmt;
+  ) program;
+  (* print_string "Expression: "; print_endline (string_of_expr e); *)
+  (* let v = evaluate e in *)
+  (* Printf.printf "Output: %s\n" (string_of_value v) *)

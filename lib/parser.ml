@@ -37,13 +37,14 @@ let rec string_of_expr e = match e with
     | Var s -> "Var: " ^ s
     | If _ -> "If"
     | Bool b -> if b then "True" else "False"
-    | Call _ -> ""
+    | Call _ -> "Call"
 
 let print_stmt s = match s with
   | Expression e ->
     begin
     match e with
     | Binary b -> print_endline ("Binary (" ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")")
+    | Call c -> printf "Call: %s\n" (string_of_expr c.callee)
     | _ -> print_string (string_of_expr e)
     end
   | Print e -> begin match e with
@@ -51,7 +52,7 @@ let print_stmt s = match s with
     | _ -> print_endline "dunno"
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl _ -> printf "Function: "
+  | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name
   (* | _ -> print_endline "" *)
 
 let at_end t = List.length t = 0
@@ -138,12 +139,12 @@ and parse_comparison tokens =
 
 and parse_equality tokens =
     let (expr, remaining) = parse_comparison tokens in
-    printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline ();
+    (* printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline (); *)
     match match_next remaining [EqualEqual] with
     | Some t ->
       let ex, rem = parse_comparison (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
-    | _ -> print_string ":O\n"; expr, remaining
+    | _ -> expr, remaining
 
 and parse_expression tokens = match tokens with
   | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
@@ -208,7 +209,9 @@ and parse_statement tokens = match tokens with
     FunctionDecl { name = lexeme; arguments = args; body = body }, remaining
     
   (* If its not a declaration, we assume its an expression *)
-  | _ -> Expression Unit, []
+  | ts -> 
+    let ex, rest = parse_expression ts in
+    Expression ex, rest
 
 let rec loop (acc: statement list) (ts: token list) =
   match ts with

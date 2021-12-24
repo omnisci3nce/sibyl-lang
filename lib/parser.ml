@@ -55,6 +55,7 @@ let print_stmt s = match s with
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
   | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name
+  | IfElse _ -> print_endline "IfElse\n"
   | _ -> print_endline ""
 
 let at_end t = List.length t = 0
@@ -96,7 +97,7 @@ and parse_call tokens =
   match match_next remaining [LeftParen] with
   | Some _ -> (
   let rec parse_params tokens = match tokens with
-      | h :: r when h.token_type = Identifier -> begin
+      | h :: r when h.token_type = Identifier || h.token_type = Number -> begin
           match match_next r [Comma] with
           | Some _ ->
             let next, rem = parse_params r in
@@ -106,6 +107,8 @@ and parse_call tokens =
       | _ -> [], tokens
     in
   let params, remaining = parse_params (List.tl remaining) in
+  (* let values = List.map (fun p -> let expr, _ = parse_primary [p] in expr) params in *)
+  print_string "Params: "; List.iter print_token params; print_newline ();
   match match_next remaining [RightParen] with
     | Some _ -> begin
       Call { callee = expr; arguments = params }, List.tl remaining
@@ -137,7 +140,11 @@ and parse_term tokens =
   | _ -> expr, remaining
 and parse_comparison tokens =
   let expr, remaining = parse_term tokens in
-  expr, remaining
+    match match_next remaining [LessThan] with
+    | Some t ->
+      let ex, rem = parse_comparison (List.tl remaining) in
+      Binary { left_expr = expr; operator = t; right_expr = ex }, rem
+    | _ -> expr, remaining
 
 and parse_equality tokens =
     let (expr, remaining) = parse_comparison tokens in
@@ -209,7 +216,29 @@ and parse_statement tokens = match tokens with
   | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
     let body, args, remaining = parse_function rest in
     FunctionDecl { name = lexeme; arguments = args; body = body }, remaining
-    
+  | { token_type = Return; _} :: rest ->
+      let ex, rest = parse_expression rest in
+      Return { value = ex }, rest
+  | { token_type = If; _} :: rest -> (
+    match match_next rest [LeftParen] with
+    | Some _ ->  (
+      let condition, rem = parse_expression (List.tl rest) in
+      (* print_string "Condition "; print_endline (string_of_expr condition); *)
+      match match_next rem [RightParen] with
+      | Some _ -> (
+        let then_branch, rem = parse_statement (List.tl rem) in
+        print_string "Then branch "; print_stmt then_branch;
+        match match_next rem [Else] with
+        | Some _ -> 
+          let else_branch, rem = parse_statement (List.tl rem) in
+          (* print_string "Else branch "; print_stmt else_branch; *)
+          IfElse { condition = condition; then_branch = then_branch; else_branch = else_branch }, rem
+        | _ -> failwith "xd"
+      )
+      | None  -> failwith "if condition needs closing bracket"
+    )
+    | None -> failwith "if condition needs to be inside parentehses"
+  )
   (* If its not a declaration, we assume its an expression *)
   | ts -> 
     let ex, rest = parse_expression ts in

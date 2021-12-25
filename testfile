@@ -1,2 +1,11 @@
-let a = (5 + 5) * 5
+fn fib(n) {
+    let next1 = n - 1
+    let next2 = n - 2
+    if (n < 2)
+      let a = n
+    else
+      let a = fib(next1) + fib(next2)
+    return a
+  }
+let a = fib(35)
 print a

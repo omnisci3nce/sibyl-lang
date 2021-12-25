@@ -61,6 +61,7 @@ let keywords = [
   Func, "Func";
   EqualEqual, "EqualEqual";
   BangEqual, "BangEqual";
+  LessThan, "LessThan";
   If, "If";
   Else, "Else";
   Return, "Return"

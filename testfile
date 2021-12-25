@@ -1,4 +1,5 @@
 fn fib(n) {
+    let a = 0
     let next1 = n - 1
     let next2 = n - 2
     if (n < 2)

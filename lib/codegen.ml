@@ -30,7 +30,7 @@ module type CodeGenerator = sig
   val gen_copy_ident : string -> string -> generator -> generator
   val gen_assign : string -> string -> generator -> generator
   (*                     name   -> body     *)
-  val gen_def_function : string -> string -> generator -> generator
+  val gen_def_function : string -> token list -> string -> generator -> generator
 end
 
 let new_generator_ filename extension =
@@ -80,13 +80,13 @@ module JS_CodeGen : CodeGenerator = struct
   let gen_plus_op a b gen = 
     let name, off (* Don't need offset in JS *) = alloc_temp_var gen in
     let _ = gen
-    |> emit ("let " ^ name ^ " = " ^ a ^ "+" ^ b)    
+    |> emit ("const " ^ name ^ " = " ^ a ^ "+" ^ b)    
     in
     (name, off)
   let gen_sub_op a b gen = 
     let name, off (* Don't need offset in JS *) = alloc_temp_var gen in
     let _ = gen
-    |> emit ("let " ^ name ^ " = " ^ a ^ "-" ^ b)    
+    |> emit ("const " ^ name ^ " = " ^ a ^ "-" ^ b)    
     in
     (name, off)
   let gen_mult_op a b gen = 
@@ -96,9 +96,11 @@ module JS_CodeGen : CodeGenerator = struct
     in
     (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
-  let gen_copy_ident target name gen = gen |> emit (target ^ " = " ^ name)
-  let gen_assign target str gen = gen |> emit (target ^ " = " ^ str)
-  let gen_def_function name body (gen: generator) = gen |> emit ("function " ^ name ^ "() {\n" ^ body ^ "\n}\n")
+  let gen_copy_ident target name gen = gen |> emit ("const " ^ target ^ " = " ^ name)
+  let gen_assign target str gen = gen |> emit ("const " ^ target ^ " = " ^ str)
+  let gen_def_function name args body (gen: generator) =
+    let arg_str = (List.nth args 0).lexeme in
+    gen |> emit ("function " ^ name ^ "(" ^ arg_str  ^ ") {\n" ^ body ^ "\n}\n")
 end
 
 module X64_CodeGen : CodeGenerator = struct
@@ -173,7 +175,7 @@ _start:
     let gen_assign target str gen = gen
     |> emit ("mov qword " ^ var gen target ^ ", " ^ str) (* only dealing with 64 bit data types for now *)
 
-  let gen_def_function _ _ (g: generator) = g
+  let gen_def_function _ _ _ (g: generator) = g
 end
 
 type calling_convention = Microsoft_x64 | System_V
@@ -217,33 +219,12 @@ module Backend (CG : CodeGenerator) = struct
       end
       | t when t.token_type = Minus -> begin
         match b.left_expr, b.right_expr with
-        (* Num + Num *)
-        | IntConst a,  IntConst b ->
-          let (name, _) = gen_sub_op (string_of_int a) (string_of_int b) gen in
-          (* print_hashtbl gen.variables; *)
-          gen, name
-        | IntConst a, Var b ->
-          let temp_name, _ = alloc_temp_var gen in
-          let new_gen = gen_copy_ident temp_name (var gen b) gen in
-          let (name, _offset) = gen_sub_op (string_of_int a) (var new_gen temp_name) new_gen in
-          new_gen, name
-
-        (* Num + Expr *)
-        | IntConst a, e ->
-          let (new_gen, temp_name) = gen_from_expr gen e in
-          let (name, _offset) = gen_sub_op (string_of_int a) (var new_gen temp_name) new_gen in
-          new_gen, name
-        (* Expr + Num *)
+        (* Expr - Num *)
         | e, IntConst a ->
           let (new_gen, temp_name) = gen_from_expr gen e in
-          let (name, _offset) = gen_sub_op (string_of_int a) (var new_gen temp_name) new_gen in
+          let (name, _offset) = gen_sub_op (var new_gen temp_name) (string_of_int a) new_gen in
           new_gen, name
-        | le, re ->
-          let (new_gen, left_temp_name) = gen_from_expr gen le in
-          let new_gen, right_temp_name = gen_from_expr new_gen re in
-          let name, _ = gen_sub_op left_temp_name right_temp_name new_gen in
-          new_gen, name
-        (* | _ -> failwith (Printf.sprintf "Cant add these types [%s] + [%s]" (string_of_expr b.left_expr) (string_of_expr b.right_expr)) *)
+        | _ -> failwith ""
       end
       | t when t.token_type = Star -> begin
         match b.left_expr, b.right_expr with
@@ -268,21 +249,35 @@ module Backend (CG : CodeGenerator) = struct
       | t when t.token_type = LessThan -> begin
         match b.left_expr, b.right_expr with
         | e, IntConst a ->
+          print_endline "Here brah";
           let (new_gen, temp_name) = gen_from_expr gen e in
-          let instr =  sprintf "let g = %s < %s" (string_of_int a) (var new_gen temp_name) in
+          let instr =  sprintf "%s < %s" (var new_gen temp_name) (string_of_int a) in
           let new_gen = emit instr new_gen in
-          new_gen, "g"
+          new_gen, instr
         | _ -> failwith "sdsdsdsd"
       end
       | _ -> print_string "HERE"; print_newline (); print_token b.operator; failwith "todo : implement this operator for binary expression"
     end
     | IntConst x -> gen, (string_of_int x)
     | Var s -> gen, s
-    | e -> printf "%s \n" (string_of_expr e);
-        (* failwith "todo: handle this expression in generator" *)
-        gen, ""
+    | Call c -> 
+      
+      print_endline "HERE";
+      let ident = match c.callee with
+      | Var s -> s
+      | _ -> failwith "rip" in
+      let args = List.map (fun t -> t.lexeme) c.arguments in
+      (* let temp_name, _ = alloc_temp_var gen in *)
+      let temp_name, _ = alloc_temp_var gen in
+      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident (List.nth args 0)) gen in
+      new_gen, temp_name
+      (* emit  gen, "" *)
 
-  let rec gen_from_stmt gen (ast: statement) = match ast with
+    | e -> printf "%s \n" (string_of_expr e);
+        failwith "todo: handle this expression in generator"
+        (* gen, temp_name *)
+
+  and gen_from_stmt gen (ast: statement) = match ast with
     | LetDecl e ->
           (* Check if var has already been allocated *)
           let _offset = if is_alloc_var gen e.identifier then
@@ -300,7 +295,7 @@ module Backend (CG : CodeGenerator) = struct
               (* Compute what we want to store in it *)
               let (new_gen, name) = gen_from_expr gen e.expr in
               print_string "Name: "; print_string name;
-              let new_gen = gen_copy_ident e.identifier name new_gen in
+              let new_gen = gen_assign e.identifier name new_gen in
               new_gen
           end
     | Print e -> begin
@@ -321,7 +316,7 @@ module Backend (CG : CodeGenerator) = struct
       let final = inner dummy_generator f.body in
       printf "Instructions for %s: \n %s\n\n" f.name final.instructions;
       let body_instructions = final.instructions in
-      let new_gen = gen_def_function f.name body_instructions gen in
+      let new_gen = gen_def_function f.name f.arguments body_instructions gen in
       print_string "Current instructions: \n"; print_string new_gen.instructions; print_newline ();
       new_gen
     | IfElse ie -> 
@@ -335,9 +330,12 @@ module Backend (CG : CodeGenerator) = struct
       let else_gen = gen_from_stmt dummy_generator ie.else_branch in
       let else_branch_instr = else_gen.instructions in
       let output = sprintf
-      "if (%s) {\n %s } else { %s }\n" cond_str then_branch_instr else_branch_instr in
+      "if (%s) {\n %s } else {\n %s }\n" cond_str then_branch_instr else_branch_instr in
       emit output gen
-    | Return _ -> gen
+    | Return r -> 
+      let dummy_generator = new_generator "functiondecl.js" in
+      let _condition_gen, return_str = gen_from_expr dummy_generator r.value in
+      emit (sprintf "\n return %s" return_str) gen
 
   and codegen gen (ast: statement list) : string = 
     let _stmt = List.nth ast 0 in

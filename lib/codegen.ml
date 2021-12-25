@@ -334,8 +334,8 @@ module Backend (CG : CodeGenerator) = struct
       emit output gen
     | Return r -> 
       let dummy_generator = new_generator "functiondecl.js" in
-      let _condition_gen, return_str = gen_from_expr dummy_generator r.value in
-      emit (sprintf "\n return %s" return_str) gen
+      let g, return_str = gen_from_expr dummy_generator r.value in
+      emit (sprintf "%s\n return %s" g.instructions return_str) gen
 
   and codegen gen (ast: statement list) : string = 
     let _stmt = List.nth ast 0 in

@@ -3,10 +3,9 @@ fn fib(n) {
     let next1 = n - 1
     let next2 = n - 2
     if (n < 2)
-      let a = n
+      return n
     else
-      let a = fib(next1) + fib(next2)
-    return a
+      return (fib(next1) + fib(next2))
   }
-let a = fib(35)
+let a = fib(12)
 print a

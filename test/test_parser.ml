@@ -3,6 +3,10 @@ open Paper
 let pprint_expr ppf e = let open Parser in match e with
   | IntConst x -> Fmt.pf ppf "IntConst %d" x
   | Binary b -> Fmt.pf ppf "Binary %s ( %s %s)" (Lexer.str_of_token b.operator) (string_of_expr b.left_expr) (string_of_expr b.right_expr)
+  | Call c -> 
+      let tts = List.map (fun t -> Lexer.(str_of_token_type t.token_type)) c.arguments in
+      let args = List.fold_right (fun str acc -> acc ^ ", " ^ str) tts "" in
+      Fmt.pf ppf "Call %s %s" (string_of_expr c.callee) args
   | _ ->  Fmt.pf ppf ""
 
 let expr_eq a b = let open Parser in match a, b with
@@ -21,7 +25,6 @@ let pprint_stmt ppf stmt = let open Parser in match stmt with
   | _ -> Fmt.pf ppf ""
 let stmt_eq a b = a = b
 let stmt_testable = Alcotest.testable pprint_stmt stmt_eq
-
 
 let test_at_end () =
   Alcotest.(check bool) "empty list" true (Parser.at_end []);
@@ -77,8 +80,18 @@ let test_one_statement_in_function () =
   } in
     Alcotest.(check stmt_testable) "Correct function body statement" expected_output stmt
   
-(* TODO: let test_parse_params () = *)
-  (* let tokens = [] *)
+let test_parse_call_arguments () =
+  let ts = Lexer.tokenise "hello(5)\n" in
+  let expr, _ = Parser.parse_expression ts in
+  let expected = Parser.Call { callee = Var "hello"; arguments = [
+    {
+      lexeme = "5";
+      literal = Some (NumberLiteral 5);
+      location = { line = 0; column = 0 };
+      token_type = Number
+    }
+  ] } in
+  Alcotest.(check expr_testable) "Correct arguments" expected expr
 
 let test_one_param_func () =
   let source = "
@@ -171,13 +184,16 @@ let () =
     "Control flow", [
       test_case "If else" `Quick test_if_else
     ];
-    "Functions", [
+    "Function Declarations", [
       test_case "Empty function declaration" `Quick test_declare_empty_function;
       test_case "One statement in function body" `Quick test_one_statement_in_function;
       test_case "One param" `Quick test_one_param_func;
       test_case "Function call no params" `Quick test_function_call;
       test_case "return" `Quick test_return;
-      test_case "Fibonacci" `Quick test_fibonacci_decl;
+      (* test_case "Fibonacci" `Quick test_fibonacci_decl; *)
+    ];
+    "Function Calls", [
+      test_case "Parse arguments" `Quick test_parse_call_arguments
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

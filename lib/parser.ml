@@ -7,8 +7,6 @@ open Printf
 type expr =
   | IntConst of int
   | Bool of bool
-  (* | StringConst of string *)
-  (* | Let of { identifier: string; expr: expr } *)
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
   | Grouping of { expr: expr }

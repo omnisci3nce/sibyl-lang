@@ -35,6 +35,7 @@ type token_type =
   | Func
   | Constrain
   | If
+  | Then
   | Else
   | Return
 
@@ -63,6 +64,7 @@ let keywords = [
   BangEqual, "BangEqual";
   LessThan, "LessThan";
   If, "If";
+  Then, "Then";
   Else, "Else";
   Return, "Return"
 ]
@@ -197,6 +199,7 @@ let scan_next ctx tokens =
     | "true" -> add_token True "constrain" None tokens ctx.line ctx.start; new_ctx
     | "false" -> add_token False (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | "if" -> add_token If (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
+    | "then" -> add_token Then (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | "else" -> add_token Else (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | "return" -> add_token Return (str_of_token_type False) None tokens ctx.line ctx.start; new_ctx
     | _ -> add_token Identifier indent_string None tokens ctx.line ctx.start; new_ctx

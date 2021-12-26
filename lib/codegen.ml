@@ -316,10 +316,10 @@ module Backend (CG : CodeGenerator) = struct
       let final = inner dummy_generator f.body in
       printf "Instructions for %s: \n %s\n\n" f.name final.instructions;
       let body_instructions = final.instructions in
-      let new_gen = gen_def_function f.name f.arguments body_instructions gen in
+      let new_gen = gen_def_function f.name f.params body_instructions gen in
       print_string "Current instructions: \n"; print_string new_gen.instructions; print_newline ();
       new_gen
-    | IfElse ie -> 
+    (* | IfElse ie -> 
       let dummy_generator = new_generator "functiondecl.js" in
       let _condition_gen, cond_str = gen_from_expr dummy_generator ie.condition in
       (* let condition_instr = condition_gen.instructions in *)
@@ -331,7 +331,7 @@ module Backend (CG : CodeGenerator) = struct
       let else_branch_instr = else_gen.instructions in
       let output = sprintf
       "if (%s) {\n %s } else {\n %s }\n" cond_str then_branch_instr else_branch_instr in
-      emit output gen
+      emit output gen *)
     | Return r -> 
       let dummy_generator = new_generator "functiondecl.js" in
       let g, return_str = gen_from_expr dummy_generator r.value in

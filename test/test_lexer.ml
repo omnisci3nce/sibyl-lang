@@ -45,6 +45,27 @@ let test_line_numbers () = let open Lexer in
   let ctx, _ = tokenise_ source in
   Alcotest.(check int) "line number advances" 2 ctx.line
 
+let test_fibonacci () = let open Lexer in
+  let fibonacci_new = "
+  fn fib(n) {
+    let a = if (n < 2) then n
+            else fib(n - 1) + fib(n - 2)
+    return a
+  }
+  let a = fib(12)
+  print a
+  " in
+  let tts = Lexer.tokenise fibonacci_new |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "Declare and use Fibonacci function"
+  [Func; Identifier; LeftParen; Identifier; RightParen; LeftBrace;
+  Let; Identifier; Equal; If; LeftParen; Identifier; LessThan; Number; RightParen; Then; Identifier;
+  Else; Identifier; LeftParen; Identifier; Minus; Number; RightParen; Plus; Identifier; LeftParen; Identifier; Minus; Number; RightParen;
+  Return; Identifier;
+  RightBrace;
+  Let; Identifier; Equal; Identifier; LeftParen; Number; RightParen;
+  Identifier; Identifier
+  ] tts
+
 (* Run it *)
 let () =
   let open Alcotest in
@@ -58,6 +79,7 @@ let () =
       "basic comparison", [ test_case "Comparison" `Quick test_comparison ];
       "basic function declaration", [
         test_case "Empty" `Quick test_empty_function_decl;
-        test_case "1 param" `Quick test_func_with_one_param
+        test_case "1 param" `Quick test_func_with_one_param;
+        test_case "Fibonacci" `Quick test_fibonacci
       ]
     ]

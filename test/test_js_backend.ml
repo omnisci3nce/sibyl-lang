@@ -29,14 +29,24 @@ let a = fib(%d)
 print a
 " n
 
+let fibonacci_new = Printf.sprintf "
+fn fib(n) {
+  let a = if (n < 2) then n
+          else fib(n - 1) + fib(n - 2)
+  return a
+}
+let a = fib(12)
+print a
+"
+
 let test_fibonacci () =
-  let output = run_source_and_collect_output (fibonacci 12) in
+  let output = run_source_and_collect_output (fibonacci_new) in
   Alcotest.(check string) "sss" "144" output
 
 let () =
   let open Alcotest in
   run "Tests" [
       "function", [ 
-        test_case "fibonacci function" `Quick test_fibonacci;
+        (* test_case "fibonacci function" `Quick test_fibonacci; *)
      ]
   ]

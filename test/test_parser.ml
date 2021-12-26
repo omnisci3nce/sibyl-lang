@@ -16,7 +16,7 @@ let pprint_stmt ppf stmt = let open Parser in match stmt with
   | Expression _ -> Fmt.pf ppf ""
   | LetDecl _ -> Fmt.pf ppf ""
   | FunctionDecl f -> Fmt.pf ppf "Function %s -- args: %d -- stmts: %d"
-      f.name (List.length f.arguments) (List.length f.body)
+      f.name (List.length f.params) (List.length f.body)
   | Print _ -> Fmt.pf ppf ""
   | _ -> Fmt.pf ppf ""
 let stmt_eq a b = a = b
@@ -52,7 +52,7 @@ let test_declare_empty_function () =
   let stmt, _rem = Parser.parse_statement ts in
   let expected_output = Parser.FunctionDecl {
     name = "hello";
-    arguments = [];
+    params = [];
     body = []
   } in
   Alcotest.(check stmt_testable) "Correct function name" expected_output stmt
@@ -67,7 +67,7 @@ let test_one_statement_in_function () =
   let stmt, _rem = Parser.parse_statement ts in
   let expected_output = Parser.FunctionDecl {
     name = "hello";
-    arguments = [];
+    params = [];
     body = [
       Parser.LetDecl {
         identifier = "a";
@@ -89,7 +89,7 @@ let test_one_param_func () =
   let stmt, _rem = Parser.parse_statement ts in
   let expected_output = Parser.FunctionDecl {
     name = "hello";
-    arguments = [{
+    params = [{
       lexeme = "a";
       literal = None;
       location = { line = 1; column = 0};
@@ -99,6 +99,46 @@ let test_one_param_func () =
   } in
     Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
+let test_fibonacci_decl () = let open Lexer in let open Parser in
+  let fibonacci_new = "
+  fn fib(n) {
+    let a = if (n < 2) then n
+            else fib(n - 1) + fib(n - 2)
+    return a
+  }
+  let a = fib(12)
+  print a
+  " in
+  let ts = tokenise fibonacci_new in
+  let program = parse ts in
+  let expected = [
+    FunctionDecl {
+      name = "fib";
+      params = [{
+        lexeme = "n";
+        literal = None;
+        location = { line = 1; column = 0};
+        token_type = Identifier;
+      }];
+      body = []
+    };
+    LetDecl {
+      identifier = "a";
+      expr = Call {
+        callee = Var "a";
+        arguments = [{
+          lexeme = "12";
+          literal = Some (NumberLiteral 12);
+          location = { line = 1; column = 0};
+          token_type = Number;
+        }]
+      }
+    };
+    Print (Var "a")
+  ] in
+  Alcotest.(check (list stmt_testable)) "Correct function params" expected program
+
+  
 let test_function_call () =
   let source = "hello()\n" in
   let ts = Lexer.tokenise source in
@@ -136,7 +176,8 @@ let () =
       test_case "One statement in function body" `Quick test_one_statement_in_function;
       test_case "One param" `Quick test_one_param_func;
       test_case "Function call no params" `Quick test_function_call;
-      test_case "return" `Quick test_return
+      test_case "return" `Quick test_return;
+      test_case "Fibonacci" `Quick test_fibonacci_decl;
     ];
     "Pattern matching", [
       test_case "TODO" `Quick dummy_test

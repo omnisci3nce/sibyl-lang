@@ -81,7 +81,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       ) body;
       !output
   | Unit -> failwith "unhandled unit"
-  | If _ -> failwith "unhandled if"
+  | IfElse _ -> failwith "unhandled if"
   | Var v -> Hashtbl.find var_env v
   (* | _ -> failwith "Unhandled expression" *)
 
@@ -91,18 +91,18 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
       Hashtbl.add var_env l.identifier value;
       None
   | FunctionDecl f ->
-      let fv = (f.arguments, f.body) in
+      let fv = (f.params, f.body) in
       Hashtbl.add func_env f.name fv;
       None
   | Expression e -> let _ = evaluate func_env var_env e in None
   | Print e -> let value = evaluate func_env var_env e in print_endline (string_of_value value); None
-  | IfElse { condition; then_branch; else_branch } -> 
+  (* | IfElse { condition; then_branch; else_branch } -> 
       let condition_value = evaluate func_env var_env condition in
       let _ = if test_value_equality condition_value then
         evaluate_stmt func_env var_env then_branch
       else 
         evaluate_stmt func_env var_env else_branch in
-      None
+      None *)
   | Return r ->
     let v = evaluate func_env var_env r.value in Some v
 

@@ -99,6 +99,15 @@ and parse_argument (args: expr list ) tokens =
     List.iter print_token tokens;
     let ex, rem = parse_expression tokens in
     [ex] @ args, rem
+and parse_params tokens = match tokens with
+  | h :: r when h.token_type = Identifier -> begin
+      match match_next r [Comma] with
+      | Some _ ->
+        let next, rem = parse_params r in
+        [h] @ next, List.tl rem
+      | _ -> [h], r
+    end
+  | _ -> [], tokens
 
 and parse_call tokens =
   let (expr, remaining) = parse_primary tokens in
@@ -146,7 +155,6 @@ and parse_comparison tokens =
 
 and parse_equality tokens =
     let (expr, remaining) = parse_comparison tokens in
-    (* printf "Expr: %s -- Remaining Tokens: " (string_of_expr expr); List.iter (fun t -> print_token t; print_string " ") remaining; print_newline (); *)
     match match_next remaining [EqualEqual] with
     | Some t ->
       let ex, rem = parse_comparison (List.tl remaining) in
@@ -155,27 +163,13 @@ and parse_equality tokens =
 
 and parse_expression tokens = match tokens with
   | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
-  (*  TODO print *)
     parse_expression rest
   | _ -> parse_equality tokens
 
 and parse_function tokens : (statement list * token list * token list) =
   match match_next tokens [LeftParen] with
   | Some _ -> begin
-    let rest = List.tl tokens in
-    
-    (* TODO: Move into its own top level function *)
-    let rec parse_params tokens = match tokens with
-      | h :: r when h.token_type = Identifier -> begin
-          match match_next r [Comma] with
-          | Some _ ->
-            let next, rem = parse_params r in
-            [h] @ next, List.tl rem
-          | _ -> [h], r
-        end
-      | _ -> [], tokens
-    in
-
+    let rest = List.tl tokens in    
     let params, remaining = parse_params rest in
 
     match match_next remaining [RightParen] with

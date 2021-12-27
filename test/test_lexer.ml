@@ -32,9 +32,7 @@ let test_empty_function_decl () = let open Lexer in
   Alcotest.(check (list token_type_testable)) "Decl Fn Hello" [Func; Identifier; LeftParen; RightParen; LeftBrace; RightBrace] tts
 
 let test_func_with_one_param () = let open Lexer in
-  let source = "
-  fn hello (a) {}
-  " in
+  let source = "fn hello (a) {}\n" in
   let tts = tokenise source |> token_types_only in
   Alcotest.(check (list token_type_testable)) "Decl Fn Hello a" [
     Func; Identifier; LeftParen; Identifier; RightParen; LeftBrace; RightBrace
@@ -66,7 +64,6 @@ let test_fibonacci () = let open Lexer in
   Identifier; Identifier
   ] tts
 
-(* Run it *)
 let () =
   let open Alcotest in
   run "Tests" [

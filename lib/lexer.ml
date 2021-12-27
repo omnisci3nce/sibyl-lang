@@ -213,7 +213,6 @@ let scan_next ctx tokens =
 
 let scan_identifier x = x
 
-
 let tokenise_ (source: string) : lexer_context * token list =
   let ctx: lexer_context = {
       source;

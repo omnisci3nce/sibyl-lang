@@ -266,10 +266,10 @@ module Backend (CG : CodeGenerator) = struct
       let ident = match c.callee with
       | Var s -> s
       | _ -> failwith "rip" in
-      let args = List.map (fun t -> t.lexeme) c.arguments in
+      (* let args = List.map (fun t -> t.lexeme) c.arguments in *)
       (* let temp_name, _ = alloc_temp_var gen in *)
       let temp_name, _ = alloc_temp_var gen in
-      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident (List.nth args 0)) gen in
+      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident "") gen in
       new_gen, temp_name
       (* emit  gen, "" *)
 

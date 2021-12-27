@@ -12,7 +12,7 @@ type expr =
   | Grouping of { expr: expr }
   | Var of string
   | IfElse of { condition: expr; then_branch: expr; else_branch: expr }
-  | Call of { callee: expr; arguments: token list }
+  | Call of { callee: expr; arguments: expr list }
   | Unit
   and literal = (string * literal_type)
 
@@ -65,6 +65,7 @@ let match_next tokens (token_types: token_type list) = match tokens with
   end
 
 let rec parse_primary tokens =
+  print_string "parse primary: "; List.iter print_token tokens ;
   match tokens with
   | h :: r  when h.token_type = Number -> 
     let i = begin match Option.get h.literal with
@@ -88,12 +89,24 @@ let rec parse_primary tokens =
   | _ :: r -> Unit, r
   | _ -> failwith " stuck"
 
+and parse_argument (args: expr list ) tokens =
+  match List.hd tokens with
+  | { token_type = Comma; _ } ->
+      let next_arg, rem = parse_argument args (List.tl tokens) in
+      next_arg @ args, rem
+  | { token_type = RightParen; _ } -> args, tokens
+  | _ -> 
+    List.iter print_token tokens;
+    let ex, rem = parse_expression tokens in
+    [ex] @ args, rem
+
+  
 and parse_call tokens =
   let (expr, remaining) = parse_primary tokens in
   match match_next remaining [LeftParen] with
   (* We have an opening parenthesis next so we know it's a function call *)
   | Some _ -> (
-  let rec parse_arguments tokens = match tokens with
+  (* let rec parse_arguments tokens = match tokens with
       | h :: r when h.token_type = Identifier || h.token_type = Number -> begin
           match match_next r [Comma] with
           | Some _ ->
@@ -102,13 +115,16 @@ and parse_call tokens =
           | _ -> [h], r
         end
       | _ -> [], tokens
-    in
-  let args, remaining = parse_arguments (List.tl remaining) in
-  print_string "Arguments: "; List.iter print_token args; print_newline ();
-  match match_next remaining [RightParen] with
-    | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
-    | None -> failwith "closing parenthesis expected"
-  )
+    in *)
+    let args, remaining = parse_argument [] (List.tl remaining) in
+    print_string "args tokens: ";
+    (* List.iter (fun a -> print_string (string_of_expr a)) args; *)
+    List.iter print_token remaining;
+  (* print_string "Arguments: "; List.iter print_token args; print_newline (); *)
+    match match_next remaining [RightParen] with
+      | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
+      | None -> failwith "closing parenthesis expected"
+    )
   (* No opening parenthesis so we just pass the expression back *)
   | None -> expr, remaining
 and parse_unary tokens =

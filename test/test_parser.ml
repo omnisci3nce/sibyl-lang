@@ -4,9 +4,9 @@ let pprint_expr ppf e = let open Parser in match e with
   | IntConst x -> Fmt.pf ppf "IntConst %d" x
   | Binary b -> Fmt.pf ppf "Binary %s ( %s %s)" (Lexer.str_of_token b.operator) (string_of_expr b.left_expr) (string_of_expr b.right_expr)
   | Call c -> 
-      let tts = List.map (fun t -> Lexer.(str_of_token_type t.token_type)) c.arguments in
-      let args = List.fold_right (fun str acc -> acc ^ ", " ^ str) tts "" in
-      Fmt.pf ppf "Call %s %s" (string_of_expr c.callee) args
+      (* let tts = List.map (fun t -> Lexer.(str_of_token_type t.token_type)) c.arguments in
+      let args = List.fold_right (fun str acc -> acc ^ ", " ^ str) tts "" in *)
+      Fmt.pf ppf "Call %s " (string_of_expr c.callee) 
   | _ ->  Fmt.pf ppf ""
 
 let expr_eq a b = let open Parser in match a, b with
@@ -84,13 +84,31 @@ let test_parse_call_arguments () =
   let ts = Lexer.tokenise "hello(5)\n" in
   let expr, _ = Parser.parse_expression ts in
   let expected = Parser.Call { callee = Var "hello"; arguments = [
-    {
+    IntConst 5
+    (* {
       lexeme = "5";
       literal = Some (NumberLiteral 5);
       location = { line = 0; column = 0 };
       token_type = Number
-    }
+    } *)
   ] } in
+  Alcotest.(check expr_testable) "Correct arguments" expected expr
+
+let test_parse_call_expr_as_argument () =
+  let ts = Lexer.tokenise "hello(5 + 1)\n" in
+  let expr, _ = Parser.parse_expression ts in
+  let expected = Parser.Call { callee = Var "hello"; arguments = [
+    Binary {
+      left_expr = IntConst 5;
+      operator = {
+        lexeme = "+";
+        literal = None;
+        location = { line = 0; column = 0};
+        token_type = Plus
+      };
+      right_expr = IntConst 1
+    }]
+  } in
   Alcotest.(check expr_testable) "Correct arguments" expected expr
 
 let test_one_param_func () =
@@ -139,12 +157,15 @@ let test_fibonacci_decl () = let open Lexer in let open Parser in
       identifier = "a";
       expr = Call {
         callee = Var "a";
-        arguments = [{
-          lexeme = "12";
+        arguments = [
+          IntConst 12
+          (* { *)
+          (* lexeme = "12";
           literal = Some (NumberLiteral 12);
           location = { line = 1; column = 0};
-          token_type = Number;
-        }]
+          token_type = Number; *)
+        (* } *)
+        ]
       }
     };
     Print (Var "a")
@@ -189,6 +210,7 @@ let () =
       test_case "One statement in function body" `Quick test_one_statement_in_function;
       test_case "One param" `Quick test_one_param_func;
       test_case "Function call no params" `Quick test_function_call;
+      test_case "" `Quick test_parse_call_expr_as_argument;
       test_case "return" `Quick test_return;
       (* test_case "Fibonacci" `Quick test_fibonacci_decl; *)
     ];

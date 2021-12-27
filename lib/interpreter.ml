@@ -65,7 +65,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       let scoped_env = Hashtbl.copy var_env in
       List.iteri (fun i arg  ->
         let open Lexer in
-        let expr, _ = parse_primary [(List.nth c.arguments i)] in
+        let expr = (List.nth c.arguments i) in
         (* print_endline (string_of_expr expr); *)
         let value = evaluate func_env var_env expr in
         Hashtbl.add scoped_env arg.lexeme (value)  

@@ -100,27 +100,14 @@ and parse_argument (args: expr list ) tokens =
     let ex, rem = parse_expression tokens in
     [ex] @ args, rem
 
-  
 and parse_call tokens =
   let (expr, remaining) = parse_primary tokens in
   match match_next remaining [LeftParen] with
   (* We have an opening parenthesis next so we know it's a function call *)
   | Some _ -> (
-  (* let rec parse_arguments tokens = match tokens with
-      | h :: r when h.token_type = Identifier || h.token_type = Number -> begin
-          match match_next r [Comma] with
-          | Some _ ->
-            let next, rem = parse_arguments r in
-            [h] @ next, List.tl rem
-          | _ -> [h], r
-        end
-      | _ -> [], tokens
-    in *)
     let args, remaining = parse_argument [] (List.tl remaining) in
     print_string "args tokens: ";
-    (* List.iter (fun a -> print_string (string_of_expr a)) args; *)
     List.iter print_token remaining;
-  (* print_string "Arguments: "; List.iter print_token args; print_newline (); *)
     match match_next remaining [RightParen] with
       | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
       | None -> failwith "closing parenthesis expected"
@@ -243,6 +230,7 @@ and parse_statement tokens = match tokens with
         | Some _ -> 
           let _else_branch, rem = parse_statement (List.tl rem) in
           (* print_string "Else branch "; print_stmt else_branch; *)
+          (* TODO clean this up *)
           Print Unit, rem
           (* IfElse { condition = condition; then_branch = then_branch; else_branch = else_branch }, rem *)
         | _ -> failwith "xd"
@@ -264,9 +252,3 @@ let rec loop (acc: statement list) (ts: token list) =
 let parse (tokens: token list) : statement list =
   let stmts = loop [] tokens in
   List.rev stmts
-
-let test_parse () = 
-  let s1 = "let a = 10 + 10 + 10\n" in
-  let tokens = tokenise s1 in 
-  let _ast = parse tokens in
-  ()

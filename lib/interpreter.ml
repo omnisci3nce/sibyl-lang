@@ -16,7 +16,6 @@ let string_of_value = function
 
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %s\n" x (string_of_value y))
 
-
 let test_value_equality = function
   | Bool b -> b
   | Int _ -> failwith "this is not of type bool"
@@ -80,7 +79,9 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
   | IfElse _ -> failwith "Unhandled IfElse"
   | Var v -> Hashtbl.find var_env v
 
-and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option = match stmt with
+and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option =
+  print_string "Evaluating: "; print_stmt stmt; print_newline ();
+  match stmt with
   | LetDecl l -> 
       let value = evaluate func_env var_env l.expr in
       Hashtbl.add var_env l.identifier value;
@@ -95,8 +96,8 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
 
 
 let test_interpret () =
-  let var_env = Hashtbl.create 10 in
-  let func_env = Hashtbl.create 10 in
+  let _var_env = Hashtbl.create 10 in
+  let _func_env = Hashtbl.create 10 in
   let t = Lexer.tokenise "
   fn fib(n) {
     let next1 = n - 1
@@ -110,9 +111,10 @@ let test_interpret () =
   let a = fib(35)
   print a
   " in
-  printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline ();
+  (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in
   List.iter (fun stmt ->
-    print_stmt stmt;
-    let _ = evaluate_stmt func_env var_env stmt in ()
+    print_string "[Statement] "; print_stmt stmt; print_newline ();
+    (* print_stmt stmt; *)
+    (* let _ = evaluate_stmt func_env var_env stmt in () *)
   ) program

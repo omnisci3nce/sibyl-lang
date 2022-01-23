@@ -48,7 +48,8 @@ let print_stmt s = match s with
     end
   | Print e -> begin match e with
     | Var v -> print_endline ("Print " ^ v)
-    | _ -> print_endline "dunno"
+    | _ -> print_endline ("Expr " ^ string_of_expr e)
+    (* | _ -> failwith "dont know how to print this" *)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
   | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name
@@ -65,7 +66,7 @@ let match_next tokens (token_types: token_type list) = match tokens with
   end
 
 let rec parse_primary tokens =
-  print_string "parse primary: "; List.iter print_token tokens ;
+  (* print_string "\nparse primary: "; List.iter print_token tokens ; *)
   match tokens with
   | h :: r  when h.token_type = Number -> 
     let i = begin match Option.get h.literal with
@@ -77,16 +78,16 @@ let rec parse_primary tokens =
   | h :: r when h.token_type = LeftParen ->
     begin
       let (expr, remaining) = parse_expression r in
-      print_endline (string_of_expr expr);
-      print_endline "Remaining: ";
-      List.iter print_token remaining;
+      (* print_endline (string_of_expr expr);
+      print_endline "Remaining: "; *)
+      (* List.iter print_token remaining; *)
       match remaining with
       | h :: r when h.token_type = RightParen -> Grouping { expr = expr }, r
       | _ -> failwith "right paren expected"
     end
   | h :: r when h.token_type = True -> Bool true, r
   | h :: r when h.token_type = False -> Bool false, r
-  | _ :: r -> Unit, r
+  (* | _ :: r -> Unit, r *)
   | _ -> failwith " stuck"
 
 and parse_argument (args: expr list ) tokens =
@@ -96,7 +97,7 @@ and parse_argument (args: expr list ) tokens =
       next_arg @ args, rem
   | { token_type = RightParen; _ } -> args, tokens
   | _ -> 
-    List.iter print_token tokens;
+    (* List.iter print_token tokens; *)
     let ex, rem = parse_expression tokens in
     [ex] @ args, rem
 and parse_params tokens = match tokens with
@@ -116,7 +117,7 @@ and parse_call tokens =
   | Some _ -> (
     let args, remaining = parse_argument [] (List.tl remaining) in
     print_string "args tokens: ";
-    List.iter print_token remaining;
+    (* List.iter print_token remaining; *)
     match match_next remaining [RightParen] with
       | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
       | None -> failwith "closing parenthesis expected"
@@ -218,12 +219,12 @@ and parse_statement tokens = match tokens with
       (* print_string "Condition "; print_endline (string_of_expr condition); *)
       match match_next rem [RightParen] with
       | Some _ -> (
-        let then_branch, rem = parse_statement (List.tl rem) in
-        print_string "Then branch "; print_stmt then_branch;
+        let _then_branch, rem = parse_statement (List.tl rem) in
+        (* print_string "Then branch "; print_stmt then_branch; *)
         match match_next rem [Else] with
         | Some _ -> 
-          let _else_branch, rem = parse_statement (List.tl rem) in
-          (* print_string "Else branch "; print_stmt else_branch; *)
+          let else_branch, rem = parse_statement (List.tl rem) in
+          print_string "Else branch "; print_stmt else_branch;
           (* TODO clean this up *)
           Print Unit, rem
           (* IfElse { condition = condition; then_branch = then_branch; else_branch = else_branch }, rem *)

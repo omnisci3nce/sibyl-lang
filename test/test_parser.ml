@@ -187,8 +187,30 @@ let test_return () =
   let _source = "\n" in
   Alcotest.(check pass) "" () ()
 
-let test_if_else () =
-  Alcotest.(check pass) "" () ()
+let test_if_else () = let open Lexer in let open Parser in
+  let source = "let x = if 5 < 10 then 5 else 10\n" in
+  let tokens = Lexer.tokenise source in
+  let program = parse tokens in
+  let expected = [
+    LetDecl {
+      identifier = "x";
+      expr = IfElse {
+        condition = Binary {
+          left_expr = IntConst 5;
+          right_expr = IntConst 10;
+          operator = {
+            token_type = LessThan;
+            lexeme = "<";
+            location = { line = 1; column = 0};
+            literal = None
+          }
+        };
+        then_branch = IntConst 5;
+        else_branch = IntConst 10
+      }
+    }
+  ] in
+  Alcotest.(check (list stmt_testable)) "Correct if else branches" expected program
 
 let dummy_test () =
   ()
@@ -200,10 +222,10 @@ let () =
       test_case "at_end" `Quick test_at_end
     ];
     "Arithmetic", [
-      test_case "binary plus" `Quick test_add_two_numbers
+      test_case "Binary plus" `Quick test_add_two_numbers
     ];
     "Control flow", [
-      test_case "If else" `Quick test_if_else
+      test_case "IfElse" `Quick test_if_else
     ];
     "Function Declarations", [
       test_case "Empty function declaration" `Quick test_declare_empty_function;

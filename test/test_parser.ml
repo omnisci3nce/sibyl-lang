@@ -7,6 +7,8 @@ let pprint_expr ppf e = let open Parser in match e with
       (* let tts = List.map (fun t -> Lexer.(str_of_token_type t.token_type)) c.arguments in
       let args = List.fold_right (fun str acc -> acc ^ ", " ^ str) tts "" in *)
       Fmt.pf ppf "Call %s " (string_of_expr c.callee) 
+  | IfElse ie -> Fmt.pf ppf "If %s Then %s Else %s"
+                (string_of_expr ie.condition) (string_of_expr ie.then_branch) (string_of_expr ie.else_branch)
   | _ ->  Fmt.pf ppf ""
 
 let expr_eq a b = let open Parser in match a, b with
@@ -17,8 +19,8 @@ let expr_testable = Alcotest.testable pprint_expr expr_eq
 
 
 let pprint_stmt ppf stmt = let open Parser in match stmt with
-  | Expression _ -> Fmt.pf ppf ""
-  | LetDecl _ -> Fmt.pf ppf ""
+  | Expression e -> Fmt.pf ppf "Expr"; pprint_expr ppf e;
+  | LetDecl l -> Fmt.pf ppf "Let %s = %s" l.identifier (string_of_expr l.expr)
   | FunctionDecl f -> Fmt.pf ppf "Function %s -- args: %d -- stmts: %d"
       f.name (List.length f.params) (List.length f.body)
   | Print _ -> Fmt.pf ppf ""
@@ -191,6 +193,7 @@ let test_if_else () = let open Lexer in let open Parser in
   let source = "let x = if 5 < 10 then 5 else 10\n" in
   let tokens = Lexer.tokenise source in
   let program = parse tokens in
+  print_endline ""; List.iter (fun s -> print_stmt s; print_newline ()) program;
   let expected = [
     LetDecl {
       identifier = "x";
@@ -201,7 +204,7 @@ let test_if_else () = let open Lexer in let open Parser in
           operator = {
             token_type = LessThan;
             lexeme = "<";
-            location = { line = 1; column = 0};
+            location = { line = 0; column = 0};
             literal = None
           }
         };

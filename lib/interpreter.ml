@@ -98,7 +98,7 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
 let test_interpret () =
   let _var_env = Hashtbl.create 10 in
   let _func_env = Hashtbl.create 10 in
-  let t = Lexer.tokenise "
+  (* let t = Lexer.tokenise "
   fn fib(n) {
     let next1 = n - 1
     let next2 = n - 2
@@ -110,6 +110,9 @@ let test_interpret () =
   }
   let a = fib(35)
   print a
+  " in *)
+  let t = Lexer.tokenise "
+  let x = if 5 < 10 then 5 else 10\n
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in

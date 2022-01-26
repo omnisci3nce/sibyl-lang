@@ -34,7 +34,7 @@ let rec string_of_expr e = match e with
     | Unary _ -> "Unary"
     | Grouping e -> Printf.sprintf "Grouping (%s)" (string_of_expr e.expr) 
     | Var s -> "Var: " ^ s
-    | IfElse _ -> "IfElse"
+    | IfElse ie -> "IfElse " ^ (Printf.sprintf "If %s Then %s Else %s" (string_of_expr ie.condition) (string_of_expr ie.then_branch) (string_of_expr ie.else_branch)) 
     | Call _ -> "Call"
     | Unit -> "Unit"
 
@@ -66,7 +66,7 @@ let match_next tokens (token_types: token_type list) = match tokens with
   end
 
 let rec parse_primary tokens =
-  (* print_string "\nparse primary: "; List.iter print_token tokens ; *)
+  print_string "\nparse primary: "; List.iter print_token tokens ;
   match tokens with
   | h :: r  when h.token_type = Number -> 
     let i = begin match Option.get h.literal with
@@ -163,6 +163,19 @@ and parse_equality tokens =
     | _ -> expr, remaining
 
 and parse_expression tokens = match tokens with
+  | h :: rest when h.token_type = If -> (
+    let condition_expr, rem = parse_equality rest in
+    match match_next rem [Then] with
+    | Some _ -> (
+      let then_expr, rem = parse_equality (List.tl rem) in
+        match match_next rem [Else] with
+        | Some _ -> (
+          let else_expr, rem = parse_equality (List.tl rem) in
+          IfElse { condition = condition_expr; then_branch = then_expr; else_branch = else_expr}, rem)
+        | None -> failwith "must provide else branch"
+    )
+    | None -> failwith "must provide then branch" 
+  )
   | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
     parse_expression rest
   | _ -> parse_equality tokens
@@ -227,7 +240,6 @@ and parse_statement tokens = match tokens with
           print_string "Else branch "; print_stmt else_branch;
           (* TODO clean this up *)
           Print Unit, rem
-          (* IfElse { condition = condition; then_branch = then_branch; else_branch = else_branch }, rem *)
         | _ -> failwith "xd"
       )
       | None  -> failwith "if condition needs closing bracket"

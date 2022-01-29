@@ -249,10 +249,11 @@ module Backend (CG : CodeGenerator) = struct
       | t when t.token_type = LessThan -> begin
         match b.left_expr, b.right_expr with
         | e, IntConst a ->
-          print_endline "Here brah";
+          (* print_endline "Here brah"; *)
           let (new_gen, temp_name) = gen_from_expr gen e in
           let instr =  sprintf "%s < %s" (var new_gen temp_name) (string_of_int a) in
-          let new_gen = emit instr new_gen in
+          (* let new_gen = emit instr new_gen in *)
+          (* let new_gen, res = alloc_temp_var  *)
           new_gen, instr
         | _ -> failwith "sdsdsdsd"
       end
@@ -266,12 +267,19 @@ module Backend (CG : CodeGenerator) = struct
       let ident = match c.callee with
       | Var s -> s
       | _ -> failwith "rip" in
-      (* let args = List.map (fun t -> t.lexeme) c.arguments in *)
-      (* let temp_name, _ = alloc_temp_var gen in *)
+      (* TODO: Handle all arguments *)
+      let new_gen, tmp_name = gen_from_expr gen (List.nth c.arguments 0) in
       let temp_name, _ = alloc_temp_var gen in
-      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident "") gen in
+      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident tmp_name) new_gen in
       new_gen, temp_name
       (* emit  gen, "" *)
+    | IfElse ie ->
+      (* let _result, _ = alloc_temp_var gen in *)
+      let (new_gen, temp_name) = gen_from_expr gen ie.condition in
+      let (new_gen, then_loc) = gen_from_expr new_gen ie.then_branch in
+      let (new_gen, else_loc) = gen_from_expr new_gen ie.else_branch in
+      let calc =  sprintf "(%s) ? (%s) : (%s)" (var new_gen temp_name) (var new_gen then_loc) (var new_gen else_loc) in
+      new_gen, calc
 
     | e -> printf "%s \n" (string_of_expr e);
         failwith "todo: handle this expression in generator"
@@ -282,7 +290,7 @@ module Backend (CG : CodeGenerator) = struct
           (* Check if var has already been allocated *)
           let _offset = if is_alloc_var gen e.identifier then
             Hashtbl.find gen.variables e.identifier
-          else 
+          else
           (* Allocate the variable to keep track of it *)
             alloc_var e.identifier gen
           in begin match e.expr with

@@ -121,7 +121,7 @@ let test_interpret () =
   fn addFive(n) {
     return n + 5
   }
-  let x = if 10 < 10 then addFive(5) else 11
+  let x = if 9 < 10 then addFive(5) else 11
   print x
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)

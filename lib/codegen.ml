@@ -262,8 +262,6 @@ module Backend (CG : CodeGenerator) = struct
     | IntConst x -> gen, (string_of_int x)
     | Var s -> gen, s
     | Call c -> 
-      
-      print_endline "HERE";
       let ident = match c.callee with
       | Var s -> s
       | _ -> failwith "rip" in
@@ -295,14 +293,14 @@ module Backend (CG : CodeGenerator) = struct
             alloc_var e.identifier gen
           in begin match e.expr with
           | IntConst x -> 
-              let (new_gen, name) = gen_from_expr gen e.expr in
-              print_string "Name: "; print_string name;
+              let (new_gen, _) = gen_from_expr gen e.expr in
+              (* print_string "Name: "; print_string name; *)
               let new_gen = gen_assign e.identifier (string_of_int x) new_gen in
               new_gen
           | _ -> 
               (* Compute what we want to store in it *)
               let (new_gen, name) = gen_from_expr gen e.expr in
-              print_string "Name: "; print_string name;
+              (* print_string "Name: "; print_string name; *)
               let new_gen = gen_assign e.identifier name new_gen in
               new_gen
           end
@@ -313,7 +311,7 @@ module Backend (CG : CodeGenerator) = struct
     end
     | Expression _ -> failwith "todo: implement Expression Codegen"
     | FunctionDecl f ->
-      print_endline "Start function decl";
+      (* print_endline "Start function decl"; *)
       let dummy_generator = new_generator "functiondecl.js" in
       let rec inner gen stmts = match stmts with
       | [] -> gen
@@ -322,10 +320,10 @@ module Backend (CG : CodeGenerator) = struct
         inner next rest
       in
       let final = inner dummy_generator f.body in
-      printf "Instructions for %s: \n %s\n\n" f.name final.instructions;
+      (* printf "Instructions for %s: \n %s\n\n" f.name final.instructions; *)
       let body_instructions = final.instructions in
       let new_gen = gen_def_function f.name f.params body_instructions gen in
-      print_string "Current instructions: \n"; print_string new_gen.instructions; print_newline ();
+      (* print_string "Current instructions: \n"; print_string new_gen.instructions; print_newline (); *)
       new_gen
     (* | IfElse ie -> 
       let dummy_generator = new_generator "functiondecl.js" in

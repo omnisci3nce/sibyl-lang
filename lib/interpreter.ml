@@ -76,11 +76,17 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       ) body;
       !output
   | Unit -> failwith "Unhandled Unit"
-  | IfElse _ -> failwith "Unhandled IfElse"
+  | IfElse ie -> (
+      (* eval condition *)
+      let cond = evaluate func_env var_env ie.condition in
+      match cond with
+      | Bool b -> if b then evaluate func_env var_env ie.then_branch else evaluate func_env var_env ie.else_branch
+      | _ -> failwith "expected condition to evaluate to a boolean"
+  )
   | Var v -> Hashtbl.find var_env v
 
 and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option =
-  print_string "Evaluating: "; print_stmt stmt; print_newline ();
+  (* print_string "Evaluating: "; print_stmt stmt; print_newline (); *)
   match stmt with
   | LetDecl l -> 
       let value = evaluate func_env var_env l.expr in
@@ -96,8 +102,8 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
 
 
 let test_interpret () =
-  let _var_env = Hashtbl.create 10 in
-  let _func_env = Hashtbl.create 10 in
+  let var_env = Hashtbl.create 10 in
+  let func_env = Hashtbl.create 10 in
   (* let t = Lexer.tokenise "
   fn fib(n) {
     let next1 = n - 1
@@ -112,12 +118,16 @@ let test_interpret () =
   print a
   " in *)
   let t = Lexer.tokenise "
-  let x = if 5 < 10 then 5 else 10\n
+  fn addFive(n) {
+    return n + 5
+  }
+  let x = if 10 < 10 then addFive(5) else 11
+  print x
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in
   List.iter (fun stmt ->
-    print_string "[Statement] "; print_stmt stmt; print_newline ();
+    (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
     (* print_stmt stmt; *)
-    (* let _ = evaluate_stmt func_env var_env stmt in () *)
+    let _ = evaluate_stmt func_env var_env stmt in ()
   ) program

@@ -1,6 +1,6 @@
 fn addFive(n) {
-    return n + 5
-  }
+  return n + 5
+}
 
 let x = if 10 < 10 then addFive(5) else 11
 

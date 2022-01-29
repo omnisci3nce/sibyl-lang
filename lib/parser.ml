@@ -116,7 +116,7 @@ and parse_call tokens =
   (* We have an opening parenthesis next so we know it's a function call *)
   | Some _ -> (
     let args, remaining = parse_argument [] (List.tl remaining) in
-    print_string "args tokens: ";
+    (* print_string "args tokens: "; *)
     (* List.iter print_token remaining; *)
     match match_next remaining [RightParen] with
       | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining

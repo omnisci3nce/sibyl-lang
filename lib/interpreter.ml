@@ -117,7 +117,6 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
   | Print e -> let value = evaluate func_env var_env e in print_endline (string_of_value value); None
   | Return r -> Some (evaluate func_env var_env r.value)
 
-
 let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in

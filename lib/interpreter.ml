@@ -84,7 +84,21 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       | Bool b -> if b then evaluate func_env var_env ie.then_branch else evaluate func_env var_env ie.else_branch
       | _ -> failwith "expected condition to evaluate to a boolean"
   )
-  | Logical _ -> failwith "not implemented"
+  | Logical l -> (
+    let left = evaluate func_env var_env l.left_expr in
+    match left with
+    | Bool b1 -> (
+      if l.operator.token_type = Or
+        then (if b1 then Bool b1 else evaluate func_env var_env l.right_expr)
+      else
+        let right = evaluate func_env var_env l.right_expr in
+          match right with
+          | Bool b2 -> Bool (b1 && b2)
+          | _ -> failwith "Logical operators (right one) must be used on booleans"
+        
+    )
+    | _ -> failwith "Logical operators must be used on booleans"
+  )
   | Var v -> try Hashtbl.find var_env v with
               Not_found -> failwith (sprintf "Couldn't find variable '%s': (%s)" v (string_of_expr expr))
 
@@ -106,22 +120,23 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
 let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
-  (* let t = Lexer.tokenise "
-  fn fib(n) {
-    let next1 = n - 1
-    let next2 = n - 2
-    if (n < 2)
-      let a = n
-    else
-      let a = fib(next1) + fib(next2)
-    return a
-  }
-  let a = fib(35)
-  print a
-  " in *)
   let t = Lexer.tokenise "
-  let a = true && true
+  let a = false && false
+  let b = false && true
+  let c = true && false
+  let d = true && true
   print a
+  print b
+  print c
+  print d
+  let e = false || false
+  let f = false || true
+  let g = true || false
+  let h = true || true
+  print e
+  print f
+  print g
+  print h
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in

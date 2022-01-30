@@ -178,7 +178,7 @@ and parse_logical_or tokens =
     match match_next remaining [Or] with
     | Some t -> 
       let ex, rem = parse_logical_and (List.tl remaining) in
-      Binary { left_expr = expr; operator = t; right_expr = ex }, rem
+      Logical { left_expr = expr; operator = t; right_expr = ex }, rem
     | None -> expr, remaining
 
 and parse_expression tokens = match tokens with

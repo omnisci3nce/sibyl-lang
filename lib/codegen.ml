@@ -98,8 +98,14 @@ module JS_CodeGen : CodeGenerator = struct
     |> emit ("let " ^ name ^ " = " ^ a ^ "*" ^ b)    
     in
     (name, off)
-  let gen_and_op _ _ _ = failwith "not yet"
-  let gen_or_op _ _ _ = failwith "not yet"
+  let gen_and_op a b gen = 
+    let (name, off) = alloc_temp_var gen in
+    let _ = gen |> emit (sprintf "const %s = %s && %s" name a b)
+    in (name, off)
+  let gen_or_op a b gen = 
+    let (name, off) = alloc_temp_var gen in
+    let _ = gen |> emit (sprintf "const %s = %s || %s" name a b)
+    in (name, off)
   let gen_not_op a gen =
     let (name, off) = alloc_temp_var gen in
     let _ = gen |> emit (sprintf "const %s = !(%s)" name a)
@@ -270,6 +276,22 @@ module Backend (CG : CodeGenerator) = struct
         | _ -> failwith "sdsdsdsd"
       end
       | _ -> print_string "HERE"; print_newline (); print_token b.operator; failwith "todo : implement this operator for binary expression"
+    end
+    | Logical l -> begin
+      match l.operator with
+      | t when t.token_type = And -> begin
+        let new_gen, left = gen_from_expr gen l.left_expr in
+        let new_gen, right = gen_from_expr new_gen l.right_expr in
+        let result, _ = gen_and_op left right new_gen in
+        new_gen, result
+      end
+      | t when t.token_type = Or -> begin
+        let new_gen, left = gen_from_expr gen l.left_expr in
+        let new_gen, right = gen_from_expr new_gen l.right_expr in
+        let result, _ = gen_or_op left right new_gen in
+        new_gen, result
+      end
+      | _ -> failwith "dont understand bro"
     end
     | IntConst x -> gen, (string_of_int x)
     | Bool b -> gen, (string_of_bool b)

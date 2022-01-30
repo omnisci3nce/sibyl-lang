@@ -28,9 +28,10 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       | Bang -> (
         match u.expr with
         | Bool b -> Bool (not b)
-        | _ -> failwith "dunno"
-        )
+        | Grouping g -> Bool (g.expr |> evaluate func_env var_env |> test_value_equality |> not)
         | _ -> failwith ""
+      )
+      | _ -> failwith ":O"
     )
   | Binary e ->
     let left = evaluate func_env var_env e.left_expr in
@@ -121,22 +122,8 @@ let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
   let t = Lexer.tokenise "
-  let a = false && false
-  let b = false && true
-  let c = true && false
-  let d = true && true
+  let a = !((false || true) && false)
   print a
-  print b
-  print c
-  print d
-  let e = false || false
-  let f = false || true
-  let g = true || false
-  let h = true || true
-  print e
-  print f
-  print g
-  print h
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in

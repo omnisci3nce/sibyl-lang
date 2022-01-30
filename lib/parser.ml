@@ -8,6 +8,7 @@ type expr =
   | IntConst of int
   | Bool of bool
   | Binary of { left_expr: expr; operator: token; right_expr: expr}
+  | Logical of { left_expr: expr; operator: token; right_expr: expr}
   | Unary of { operator: token; expr: expr }
   | Grouping of { expr: expr }
   | Var of string
@@ -31,6 +32,7 @@ let rec string_of_expr e = match e with
     | IntConst i ->  "IntConst " ^ (string_of_int i)
     | Bool b -> if b then "True" else "False"
     | Binary b -> "Binary (" ^ b.operator.lexeme ^ " " ^ string_of_expr b.left_expr ^ ", " ^ string_of_expr b.right_expr ^ ")"
+    | Logical _l -> "Logical"
     | Unary _ -> "Unary"
     | Grouping e -> Printf.sprintf "Grouping (%s)" (string_of_expr e.expr) 
     | Var s -> "Var: " ^ s
@@ -160,17 +162,34 @@ and parse_equality tokens =
     | Some t ->
       let ex, rem = parse_comparison (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
-    | _ -> expr, remaining
+      | _ -> expr, remaining
+      
+      
+and parse_logical_and tokens = 
+  let expr, remaining = parse_equality tokens in
+  match match_next remaining [And] with
+  | Some t ->
+    let ex, rem = parse_equality (List.tl remaining) in
+    Logical { left_expr = expr; operator = t; right_expr = ex }, rem
+  | None -> expr, remaining
+
+and parse_logical_or tokens =
+    let expr, remaining = parse_logical_and tokens in
+    match match_next remaining [Or] with
+    | Some t -> 
+      let ex, rem = parse_logical_and (List.tl remaining) in
+      Binary { left_expr = expr; operator = t; right_expr = ex }, rem
+    | None -> expr, remaining
 
 and parse_expression tokens = match tokens with
   | h :: rest when h.token_type = If -> (
-    let condition_expr, rem = parse_equality rest in
+    let condition_expr, rem = parse_logical_or rest in
     match match_next rem [Then] with
     | Some _ -> (
-      let then_expr, rem = parse_equality (List.tl rem) in
+      let then_expr, rem = parse_logical_or (List.tl rem) in
         match match_next rem [Else] with
         | Some _ -> (
-          let else_expr, rem = parse_equality (List.tl rem) in
+          let else_expr, rem = parse_logical_or (List.tl rem) in
           IfElse { condition = condition_expr; then_branch = then_expr; else_branch = else_expr}, rem)
         | None -> failwith "must provide else branch"
     )
@@ -178,7 +197,7 @@ and parse_expression tokens = match tokens with
   )
   | h :: a :: rest when a.token_type = Identifier && h.lexeme = "print" ->
     parse_expression rest
-  | _ -> parse_equality tokens
+  | _ -> parse_logical_or tokens
 
 and parse_function tokens : (statement list * token list * token list) =
   match match_next tokens [LeftParen] with

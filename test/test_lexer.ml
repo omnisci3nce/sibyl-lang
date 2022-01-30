@@ -22,6 +22,14 @@ let test_comparison () =
   let tts = Lexer.tokenise "true != false\n" |> token_types_only in
   Alcotest.(check (list token_type_testable)) "BangEqual" [True; BangEqual; False] tts
 
+let test_and () =
+  let tts = Lexer.tokenise "true && false\n" |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "And" [True; And; False] tts
+
+let test_or () =
+  let tts = Lexer.tokenise "false || true\n" |> token_types_only in
+  Alcotest.(check (list token_type_testable)) "And" [False; Or; True] tts
+
 let test_empty_function_decl () = let open Lexer in
   let source = "
   fn hello() {
@@ -70,6 +78,8 @@ let () =
       "basic tokenise", [ 
         test_case "Single int literal" `Quick test_single_int_literal;
         test_case "line numbers" `Quick test_line_numbers;
+        test_case "&&" `Quick test_and;
+        test_case "||" `Quick test_or;
         test_case "if" `Quick test_if;
         test_case "return" `Quick test_return;
      ];

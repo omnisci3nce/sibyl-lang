@@ -41,10 +41,26 @@ let make_binary l r lex op_t = Parser.(
   }; right_expr = r
 })
 
+let make_logical l r lex op_t = Parser.(
+  Logical { left_expr = l; operator = {
+    lexeme = lex;
+    literal = None;
+    location = { line = 0; column = 0 };
+    token_type = op_t;
+  }; right_expr = r
+})
+
 let test_add_two_numbers () =
   let ts = Lexer.tokenise "5 + 5\n" in
   let expr, _rem = Parser.parse_expression ts in
   let expected_expr = make_binary (IntConst 5) (IntConst 5) "+" Plus in
+  Alcotest.(check expr_testable) "success" expected_expr expr 
+
+let test_and () =
+  let ts = Lexer.tokenise "true && false\n" in
+  let expr, _rem = Parser.parse_expression ts in
+  print_newline (); print_string (Parser.string_of_expr expr); print_newline ();
+  let expected_expr = make_logical (Bool true) (Bool false) "&&" And in
   Alcotest.(check expr_testable) "success" expected_expr expr 
 
 let test_declare_empty_function () =
@@ -226,6 +242,9 @@ let () =
     ];
     "Arithmetic", [
       test_case "Binary plus" `Quick test_add_two_numbers
+    ];
+    "Logical Operators", [
+      test_case "Simple &&" `Quick test_and
     ];
     "Control flow", [
       test_case "IfElse" `Quick test_if_else

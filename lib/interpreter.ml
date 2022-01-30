@@ -58,7 +58,8 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       | Var v -> v
       | _ -> failwith "Call callee has to be Var expression (I think)" 
       end in
-      let (args, body) = Hashtbl.find func_env name in
+      let (args, body) = try Hashtbl.find func_env name with
+                          Not_found -> failwith (sprintf "Couldn't find function '%s'" name) in
       let scoped_env = Hashtbl.copy var_env in
       List.iteri (fun i arg  ->
         let open Lexer in
@@ -83,10 +84,11 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       | Bool b -> if b then evaluate func_env var_env ie.then_branch else evaluate func_env var_env ie.else_branch
       | _ -> failwith "expected condition to evaluate to a boolean"
   )
-  | Var v -> Hashtbl.find var_env v
+  | Logical _ -> failwith "not implemented"
+  | Var v -> try Hashtbl.find var_env v with
+              Not_found -> failwith (sprintf "Couldn't find variable '%s': (%s)" v (string_of_expr expr))
 
 and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option =
-  (* print_string "Evaluating: "; print_stmt stmt; print_newline (); *)
   match stmt with
   | LetDecl l -> 
       let value = evaluate func_env var_env l.expr in
@@ -118,11 +120,8 @@ let test_interpret () =
   print a
   " in *)
   let t = Lexer.tokenise "
-  fn addFive(n) {
-    return n + 5
-  }
-  let x = if 9 < 10 then addFive(5) else 11
-  print x
+  let a = true && true
+  print a
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in

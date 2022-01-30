@@ -14,6 +14,8 @@ type token_type =
   | Equal
   | GreaterThan
   | LessThan
+  | Ampersand
+  | Pipe
   | Bang
   | Comma
 
@@ -22,6 +24,8 @@ type token_type =
   | GreaterEqual
   | LesserEqual
   | BangEqual
+  | And
+  | Or
 
   (* Literals *)
   | Identifier
@@ -63,6 +67,10 @@ let keywords = [
   EqualEqual, "EqualEqual";
   BangEqual, "BangEqual";
   LessThan, "LessThan";
+  Ampersand, "Ampersand";
+  And, "And";
+  Or, "Or";
+  Pipe, "Pipe";
   If, "If";
   Then, "Then";
   Else, "Else";
@@ -176,6 +184,16 @@ let scan_next ctx tokens =
       match match_next ctx '=' with
       | true  -> add_token LesserEqual "<=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
       | false -> add_token LessThan "<" None tokens ctx.line ctx.start; ctx
+  )
+  | '&' -> (
+      match match_next ctx '&' with
+      | true  -> add_token And "&&" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token Ampersand "&" None tokens ctx.line ctx.start; ctx
+  )
+  | '|' -> (
+      match match_next ctx '|' with
+      | true  -> add_token Or "||" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token Pipe "|" None tokens ctx.line ctx.start; ctx
   )
   | '/' -> 
     let rec comment_out c =

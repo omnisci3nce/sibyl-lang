@@ -121,13 +121,13 @@ let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
   let t = Lexer.tokenise "
-  let a = !((false || true) && false)
-  print a
+  let a = !((false || true) && true)
+  let result = if a then 5 else 10
+  print result
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in
   List.iter (fun stmt ->
     (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
-    (* print_stmt stmt; *)
     let _ = evaluate_stmt func_env var_env stmt in ()
   ) program

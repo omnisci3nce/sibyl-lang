@@ -1,0 +1,2 @@
+let a = !false
+print a

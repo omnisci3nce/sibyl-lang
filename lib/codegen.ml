@@ -26,6 +26,9 @@ module type CodeGenerator = sig
   val gen_plus_op : string -> string -> generator -> (string * int)
   val gen_sub_op : string -> string -> generator -> (string * int)
   val gen_mult_op : string -> string -> generator -> (string * int)
+  val gen_and_op : string -> string -> generator -> (string * int)
+  val gen_or_op : string -> string -> generator -> (string * int)
+  val gen_not_op : string -> generator -> (string * int)
   val gen_print : string -> generator -> generator
   val gen_copy_ident : string -> string -> generator -> generator
   val gen_assign : string -> string -> generator -> generator
@@ -95,6 +98,12 @@ module JS_CodeGen : CodeGenerator = struct
     |> emit ("let " ^ name ^ " = " ^ a ^ "*" ^ b)    
     in
     (name, off)
+  let gen_and_op _ _ _ = failwith "not yet"
+  let gen_or_op _ _ _ = failwith "not yet"
+  let gen_not_op a gen =
+    let (name, off) = alloc_temp_var gen in
+    let _ = gen |> emit (sprintf "const %s = !(%s)" name a)
+    in (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
   let gen_copy_ident target name gen = gen |> emit ("const " ^ target ^ " = " ^ name)
   let gen_assign target str gen = gen |> emit ("const " ^ target ^ " = " ^ str)
@@ -158,6 +167,9 @@ _start:
     |> emit ("mov [rsp+" ^ string_of_int offset ^ "], rax ; move onto stack")
     in
     (name, offset)
+  let gen_and_op _ _ _ = failwith "not yet"
+  let gen_or_op _ _ _ = failwith "not yet"
+  let gen_not_op _ _ = failwith "not yet"
   let gen_print var_name gen =
     print_string "print"; print_string var_name; 
     let offset = Hashtbl.find gen.variables var_name in
@@ -260,6 +272,7 @@ module Backend (CG : CodeGenerator) = struct
       | _ -> print_string "HERE"; print_newline (); print_token b.operator; failwith "todo : implement this operator for binary expression"
     end
     | IntConst x -> gen, (string_of_int x)
+    | Bool b -> gen, (string_of_bool b)
     | Var s -> gen, s
     | Call c -> 
       let ident = match c.callee with
@@ -278,6 +291,10 @@ module Backend (CG : CodeGenerator) = struct
       let (new_gen, else_loc) = gen_from_expr new_gen ie.else_branch in
       let calc =  sprintf "(%s) ? (%s) : (%s)" (var new_gen temp_name) (var new_gen then_loc) (var new_gen else_loc) in
       new_gen, calc
+    | Unary u ->
+      let new_gen, temp_name = gen_from_expr gen u.expr in
+      let result, _ = gen_not_op temp_name gen in
+      new_gen, result
 
     | e -> printf "%s \n" (string_of_expr e);
         failwith "todo: handle this expression in generator"

@@ -333,13 +333,11 @@ module Backend (CG : CodeGenerator) = struct
           in begin match e.expr with
           | IntConst x -> 
               let (new_gen, _) = gen_from_expr gen e.expr in
-              (* print_string "Name: "; print_string name; *)
               let new_gen = gen_assign e.identifier (string_of_int x) new_gen in
               new_gen
           | _ -> 
               (* Compute what we want to store in it *)
               let (new_gen, name) = gen_from_expr gen e.expr in
-              (* print_string "Name: "; print_string name; *)
               let new_gen = gen_assign e.identifier name new_gen in
               new_gen
           end

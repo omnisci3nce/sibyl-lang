@@ -227,6 +227,7 @@ let scan_next ctx tokens =
     add_token Number (string_of_int num) (Some (NumberLiteral num)) tokens ctx.line ctx.start; new_ctx
   | ' ' -> ctx
   | '\n' -> { ctx with line = ctx.line + 1 }
+  | '\r' -> ctx (* do nothing - windows *)
   | _ -> raise (Lex_err ("Unknown character: " ^ (Char.escaped c) ^ " on line " ^ (string_of_int ctx.line)))
 
 let scan_identifier x = x

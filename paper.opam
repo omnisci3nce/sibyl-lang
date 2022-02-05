@@ -1,0 +1,7 @@
+opam-version: "2.0"
+name: "paper"
+version: "0.1"
+synopsis: "Paper programming language"
+maintainer: "Omniscient <omniscient.oce@gmail.com>"
+author: "Omniscient <omniscient.oce@gmail.com>"
+depends: [ "dune" "alcotest" "logs"]

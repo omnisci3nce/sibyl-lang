@@ -2,8 +2,11 @@ name: Main workflow
 
 on: 
   push:
+    branches:
+    - master
   pull_request:
-    types: [opened]
+    branches:
+    - master
 
 jobs:
   build:

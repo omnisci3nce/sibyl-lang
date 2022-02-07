@@ -1,4 +1,3 @@
-(executable
- (public_name paper)
- (name main)
- (libraries paper experiment logs))
+(executables
+ (names main cparse)
+ (libraries paper cinterop experiment logs))

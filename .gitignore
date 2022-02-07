@@ -3,3 +3,4 @@ _build
 *.s
 *.exe
 *.js
+*.out

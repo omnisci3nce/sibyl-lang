@@ -112,7 +112,7 @@ module JS_CodeGen : CodeGenerator = struct
     in (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
   let gen_copy_ident target name gen = gen |> emit ("const " ^ target ^ " = " ^ name)
-  let gen_assign target str gen = gen |> emit ("const " ^ target ^ " = " ^ str)
+  let gen_assign target str gen = gen |> emit (target ^ " = " ^ str)
   let gen_def_function name args body (gen: generator) =
     let arg_str = (List.nth args 0).lexeme in
     gen |> emit ("function " ^ name ^ "(" ^ arg_str  ^ ") {\n" ^ body ^ "\n}\n")
@@ -267,7 +267,6 @@ module Backend (CG : CodeGenerator) = struct
       | t when t.token_type = LessThan -> begin
         match b.left_expr, b.right_expr with
         | e, IntConst a ->
-          (* print_endline "Here brah"; *)
           let (new_gen, temp_name) = gen_from_expr gen e in
           let instr =  sprintf "%s < %s" (var new_gen temp_name) (string_of_int a) in
           (* let new_gen = emit instr new_gen in *)
@@ -302,17 +301,24 @@ module Backend (CG : CodeGenerator) = struct
       | _ -> failwith "rip" in
       (* TODO: Handle all arguments *)
       let new_gen, tmp_name = gen_from_expr gen (List.nth c.arguments 0) in
-      let temp_name, _ = alloc_temp_var gen in
+      let temp_name, _ = alloc_temp_var new_gen in
       let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident tmp_name) new_gen in
       new_gen, temp_name
-      (* emit  gen, "" *)
     | IfElse ie ->
-      (* let _result, _ = alloc_temp_var gen in *)
-      let (new_gen, temp_name) = gen_from_expr gen ie.condition in
-      let (new_gen, then_loc) = gen_from_expr new_gen ie.then_branch in
-      let (new_gen, else_loc) = gen_from_expr new_gen ie.else_branch in
-      let calc =  sprintf "(%s) ? (%s) : (%s)" (var new_gen temp_name) (var new_gen then_loc) (var new_gen else_loc) in
-      new_gen, calc
+      let result_name, _ = alloc_temp_var gen in
+      let new_gen = emit (sprintf "let %s;" result_name) gen in 
+      let new_gen, condition = gen_from_expr new_gen ie.condition in
+      let new_gen = emit ("if (" ^ (var new_gen condition) ^ ") {") new_gen in
+      let new_gen, then_res = gen_from_expr new_gen ie.then_branch in
+      let new_gen = gen_assign result_name then_res new_gen in
+      let new_gen = emit "} else {" new_gen in
+      let new_gen, else_res = gen_from_expr new_gen ie.else_branch in
+      let new_gen = gen_assign result_name else_res new_gen in
+
+      let new_gen = emit "}" new_gen in
+      new_gen, result_name
+
+
     | Unary u ->
       let new_gen, temp_name = gen_from_expr gen u.expr in
       let result, _ = gen_not_op temp_name gen in
@@ -320,7 +326,6 @@ module Backend (CG : CodeGenerator) = struct
 
     | e -> printf "%s \n" (string_of_expr e);
         failwith "todo: handle this expression in generator"
-        (* gen, temp_name *)
 
   and gen_from_stmt gen (ast: statement) = match ast with
     | LetDecl e ->
@@ -348,7 +353,6 @@ module Backend (CG : CodeGenerator) = struct
     end
     | Expression _ -> failwith "todo: implement Expression Codegen"
     | FunctionDecl f ->
-      (* print_endline "Start function decl"; *)
       let dummy_generator = new_generator "functiondecl.js" in
       let rec inner gen stmts = match stmts with
       | [] -> gen
@@ -357,10 +361,8 @@ module Backend (CG : CodeGenerator) = struct
         inner next rest
       in
       let final = inner dummy_generator f.body in
-      (* printf "Instructions for %s: \n %s\n\n" f.name final.instructions; *)
       let body_instructions = final.instructions in
       let new_gen = gen_def_function f.name f.params body_instructions gen in
-      (* print_string "Current instructions: \n"; print_string new_gen.instructions; print_newline (); *)
       new_gen
     (* | IfElse ie -> 
       let dummy_generator = new_generator "functiondecl.js" in

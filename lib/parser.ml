@@ -49,7 +49,7 @@ let print_stmt s = match s with
     | _ -> print_string (string_of_expr e)
     end
   | Print e -> begin match e with
-    | Var v -> print_endline ("Print " ^ v)
+    | Var v -> printf "Print %s" v
     | _ -> print_endline ("Expr " ^ string_of_expr e)
     (* | _ -> failwith "dont know how to print this" *)
   end

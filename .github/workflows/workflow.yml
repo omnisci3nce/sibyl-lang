@@ -3,10 +3,11 @@ name: Main workflow
 on: 
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
+    types: [opened, reopened, synchronize]
 
 jobs:
   build:

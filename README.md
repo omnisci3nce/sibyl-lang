@@ -1,14 +1,43 @@
 # paper
 
-## Basic Types
+ML-inspired programming language for learning purposes.
 
-### Integers
+The goals are for Paper to be:
 
-u8, u16, u32, u64
-i8, i16, i32, i64
+- Functional but not to a fault - OCaml
+- Flexible and modular - Module system
+- Simple - Few syntactic structures
 
-int literal will figure out which it can use, so you only need to add say one manual type and then other + and * operators will make the other argument the same integer type
+Currently I'm learning about compilers via Crafting Interpreters and then applying what I learn to Paper as well as any additional information I learn from other sources online and on the ProgrammingLanguages Discord.
 
-### String
+## Backends
 
-string type is utf-8 by default
+In order from most complete to least complete
+
+1. JavaScript
+1. x64 Assembly
+1. ARM Assembly (not started)
+1. WASM (not started)
+1. Bytecode (not started)
+
+## Vague Roadmap
+
+- [x] Booleans & Ints
+- Functions
+- Loops
+- String literals
+- Static arrays
+- Lists
+- String type
+- Pattern matching
+- File IO
+- Algebraic Data types
+- Dynamic arrays / slices
+- Tail recursion
+- Type inference
+- Tuples
+- Garbage Collector
+- Module system
+- Structs
+- Stdlib: JSON
+- Stdlib: HTTP

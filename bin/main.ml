@@ -21,7 +21,7 @@ let () =
   Logs.set_level @@ Some Logs.Debug;
   Logs.set_reporter @@ Logs.format_reporter ();
 
-  let usage_msg = "usage: paper [-parse] [-lex] <file>" in
+  let usage_msg = "usage: sibyl [-parse] [-lex] <file>" in
   let parse = ref false in
   let lex = ref false in
   let input_files = ref "" in

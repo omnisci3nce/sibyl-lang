@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Paperlang compiler test suite"
+echo "Sibyl compiler test suite"
 echo "============================="
 
 echo "Parse Tests"

@@ -1,4 +1,4 @@
-(* Evaluate Paper code with OCaml  *)
+(* Evaluate Sibyl code with OCaml  *)
 
 open Parser
 open Printf

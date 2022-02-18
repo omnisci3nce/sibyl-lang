@@ -200,7 +200,7 @@ let variables = Hashtbl.create 100
 module Tilde = struct
   let alloc_var identifier =
     (* Create local *)
-    let reg = tb_inst_local init_func 8 4 in
+    let reg = tb_inst_local init_func 8 8 in
     (* Store *)
     Hashtbl.add variables identifier reg;
     reg
@@ -231,16 +231,23 @@ module Tilde = struct
         (* Allocate variable *)
         let name = alloc_var ld.identifier in
         let value = gen_from_expr ld.expr in
-        tb_inst_store init_func i64_dt name value 4
+        (*TB_API TB_Reg tb_inst_load(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_CharUnits align); *)
+        let _ = tb_inst_store init_func i64_dt name value 8 in
+        ()
     | FunctionDecl _ -> failwith "todo"
-    | Print e ->
-        let format_string = tb_inst_cstring init_func "sum: %ld" in
-        let value = gen_from_expr e in
+    | Print e -> (
+      match e with
+      | Var v ->
+        let format_string = tb_inst_cstring init_func "sum: %lld\n" in
+        let value = Hashtbl.find variables v in
+        let x = tb_inst_load init_func i64_dt value 8 in
         let arr = Ctypes.CArray.make Ctypes.int 2 in
         Ctypes.CArray.set arr 0 format_string;
-        Ctypes.CArray.set arr 1 value; 
+        Ctypes.CArray.set arr 1 x; 
         let _ = tb_inst_ecall init_func void_dt printf_handle 2 (Ctypes.CArray.start arr) in
         ()
+      | _ -> failwith "todo"
+    ) 
 
     | Expression _ -> failwith "todo"
     | Return _ -> failwith "todo"

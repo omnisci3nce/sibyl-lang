@@ -210,6 +210,10 @@ module Tilde = struct
   
   let gen_add_op a b =
     Instructions.inst_add init_func a b AssumeNSW
+  let gen_sub_op a b =
+      tb_inst_sub init_func a b (int_of_arithmatic_behaviour AssumeNSW)
+  let gen_mul_op a b =
+      tb_inst_mul init_func a b (int_of_arithmatic_behaviour AssumeNSW)
 
   let gen_from_expr = function
     | Binary b -> begin
@@ -223,6 +227,16 @@ module Tilde = struct
           sum
         | _ -> failwith "todo"
       )
+      | t when t.token_type = Star -> (
+        match b.left_expr, b.right_expr with
+        | IntConst a, IntConst b ->
+          let a = gen_int_const a
+          and b = gen_int_const b in
+          let sum = gen_mul_op a b in
+          sum
+        | _ -> failwith "todo"
+      )
+
       | _ -> failwith "todo"
     end
     | _ -> failwith "todo"

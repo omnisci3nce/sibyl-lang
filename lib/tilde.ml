@@ -188,7 +188,10 @@ let tb_inst_sint = foreign "tb_inst_sint"
 
 let tb_inst_add = foreign "tb_inst_add"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
-
+let tb_inst_sub = foreign "tb_inst_sub"
+  (ptr tb_function @-> int @-> int @-> int @-> returning int)
+let tb_inst_mul = foreign "tb_inst_mul"
+  (ptr tb_function @-> int @-> int @-> int @-> returning int)
 let tb_inst_ret = foreign "tb_inst_ret"
   (ptr tb_function @-> int @-> returning void)
 

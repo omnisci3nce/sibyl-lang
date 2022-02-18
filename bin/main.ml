@@ -3,14 +3,15 @@ open Sibyl.Lexer
 
 let run_file ~parse:only_parse filename =
   let source = filename |> read_whole_file in
-  let gen = Backends.JS.new_generator "output.js" in
+  (* let gen = Backends.Tilde.new_generator "output.js" in *)
   let ast = source
     |> Lexer.tokenise
     |> Parser.parse in
   if not only_parse then
-    let asm = ast |> Backends.JS.codegen gen in (* tokenise -> parse -> generate assembly *)
-    let ch = open_out "output.js" in
-    Printf.fprintf ch "%s" asm; flush ch; close_out ch; (* write assembly to file *) 
+    let _ = ast |> Backends.Tilde.codegen in (* tokenise -> parse -> generate assembly *)
+    (* let ch = open_out "output.js" in *)
+    (* Printf.fprintf ch "%s" asm; flush ch; close_out ch;  *)
+    (* write assembly to file *) 
     (* let _ = print_string "assembler"; Sys.command "nasm -f elf64 output.s -o output.o" in
     let _ = print_string " -> linker"; Sys.command "gcc -no-pie -nostartfiles output.o -o output.exe" in
     print_string " -> executable!\n"; flush stdout; let _ =  Sys.command "node ./output.js" in *)

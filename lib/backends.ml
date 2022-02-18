@@ -1,9 +1,6 @@
 open Parser
-open Codegen
-open Printf
-open Lexer
 
-module Make (CG : CodeGenerator) = struct
+(* module Make (CG : CodeGenerator) = struct
   include CG
 
   let rec gen_from_expr gen expr : (generator * string) = match expr with
@@ -182,7 +179,65 @@ module Make (CG : CodeGenerator) = struct
     let output = generate_begin ^ generate_entrypoint ^  final.instructions ^ generate_end ^ generate_exit in
     output
 end
+*)
+open Tilde
 
-module JS = Make (Js_backend.CodeGen)
+(* Only deal with 64bit ints at the moment *)
+let i64_dt = DataType.create I64 0
 
-(* module Tilde = Make (Tilde_backend.CodeGen) *)
+(* Global context *)
+let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
+let init_proto = function_create g_module 0 i64_dt 0 false
+let init_func = function_build g_module init_proto "init" 0
+
+type value = 
+  | Int of int
+
+module Tilde = struct
+  (* 
+  let proto = function_create g_module 1 i8_dt 0 false in
+  let func = function_build g_module proto "test_add_i8" 0 in
+  let a = tb_inst_sint func i8_dt (a |> int_of_string |> Signed.Int64.of_int) in
+  let b = tb_inst_sint func i8_dt (b |> int_of_string |> Signed.Int64.of_int) in
+  let sum = inst_add func a b AssumeNUW in
+  inst_return func sum;
+  let _ = function_compile g_module func in *)
+  let gen_int_const x =
+    tb_inst_sint init_func i64_dt (Signed.Int64.of_int x)
+  
+  let gen_add_op a b =
+    Instructions.inst_add init_func a b AssumeNSW
+
+  let rec gen_from_expr = function
+    | Binary b -> begin
+      match b.operator with
+      | t when t.token_type = Plus -> (
+        match b.left_expr, b.right_expr with
+        | IntConst a, IntConst b ->
+          let a = gen_int_const a
+          and b = gen_int_const b in
+          let sum = gen_add_op a b in
+          Int sum
+        | _ -> failwith "todo"
+      )
+      | _ -> failwith "todo"
+    end
+    | _ -> failwith "todo"
+  let gen_from_stmt = function
+    | LetDecl ld ->
+        (* Allocate variable *)
+        let name = alloc_var ld.identifier in
+        let value = gen_from_expr ld.expr in
+        gen_store_int_const name value 
+    | FunctionDecl _ -> failwith "todo"
+    | Print _ -> failwith "todo"
+    | Expression _ -> failwith "todo"
+    | Return _ -> failwith "todo"
+  let codegen (ast: statement list) =
+    List.iter (fun stmt -> gen_from_stmt stmt; ()) ast;
+
+
+end
+
+(* module JS = Make (Js_backend.CodeGen)
+module X64 = Make (X64_backend.CodeGen) *)

@@ -255,8 +255,16 @@ module Module = struct
 end
 module Function = struct
   open DataType
-  let create m dt = function_create m 0 (get_datatype dt) 0 false
+  let _create m dt = function_create m 0 (get_datatype dt) 0 false
   let build m p name = function_build m p name 0
+
+  let create modul name return_type (params: type_t list) =
+    let proto = function_create modul 0
+                          (get_datatype return_type)
+                          (List.length params)
+                          false in
+    let func = build modul proto name in
+    func
 end
 
 

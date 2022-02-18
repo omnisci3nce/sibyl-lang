@@ -4,8 +4,7 @@ open Tilde.DataType
 
 (* Global context *)
 let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
-let init_proto = Function.create g_module I64
-let init_func = Function.build g_module init_proto "init"
+let init_func = Function.create g_module "init" I64 []
 let printf_handle = tb_extern_create g_module "printf"
 
 let variables = Hashtbl.create 100
@@ -108,7 +107,11 @@ module Tilde = struct
         (* Store *)
         let _ = Inst.store init_func I64 name value.reg 8 in
         ()
-    | FunctionDecl _ -> failwith "todo"
+    | FunctionDecl f ->
+        let param_types = [I64] in
+        let func = Function.create g_module f.name I64 param_types in
+
+        () 
     | Print e -> (
       match e with
       | Var v ->

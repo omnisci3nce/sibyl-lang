@@ -19,14 +19,18 @@ module Tilde = struct
     reg
 
   let gen_int_const x = Inst.i64 init_func x
+  let gen_bool_const x = Inst.u8 init_func (if x = true then 1 else 0)
   let gen_add_op a b = Inst.add init_func a b AssumeNSW
   let gen_sub_op a b = Inst.sub init_func a b AssumeNSW
   let gen_mul_op a b = Inst.mul init_func a b AssumeNSW
   let gen_div_op a b = Inst.div init_func a b AssumeNSW
   let gen_less_than_op a b = Inst.less_than init_func a b
+  let gen_and_op a b = Inst.logical_and init_func a b
+  let gen_or_op a b = Inst.logical_or init_func a b
 
   let rec gen_from_expr = function
     | IntConst i -> gen_int_const i
+    | Bool b -> gen_bool_const b
     | Grouping e -> gen_from_expr e.expr
     | Binary b -> begin
       match b.operator.token_type with
@@ -53,33 +57,6 @@ module Tilde = struct
         result
       | _ -> failwith "todo"
     end
-    (* 
-  TB_Label if_true = tb_inst_new_label_id(func);
-	TB_Label if_false = tb_inst_new_label_id(func);
-
-    // if (n < 2)
-	tb_inst_if(func, tb_inst_cmp_ilt(func, n, tb_inst_sint(func, TB_TYPE_I32, 2), true), if_true, if_false);
-	
-	// then
-	{
-		tb_inst_label(func, if_true);
-		tb_inst_ret(func, n);
-	}
-	
-	// else
-	{
-		tb_inst_label(func, if_false);
-		
-		TB_Register n_minus_one = tb_inst_sub(func, n, tb_inst_sint(func, TB_TYPE_I32, 1), TB_ASSUME_NUW);
-		TB_Register call1 = tb_inst_call(func, TB_TYPE_I32, func, 1, (TB_Register[]) { n_minus_one });
-		
-		TB_Register n_minus_two = tb_inst_sub(func, n, tb_inst_sint(func, TB_TYPE_I32, 2), TB_ASSUME_NUW);
-		TB_Register call2 = tb_inst_call(func, TB_TYPE_I32, func, 1, (TB_Register[]) { n_minus_two });
-		
-		TB_Register sum = tb_inst_add(func, call1, call2, TB_ASSUME_NUW);
-		tb_inst_ret(func, sum);
-	}
-    *)
     | IfElse ie ->
       let fp = init_func in
 
@@ -116,9 +93,15 @@ module Tilde = struct
       (* Return register with expression result *)
       result
 
-    | Bool _ -> failwith "todo: Bool"
     | Unary _ -> failwith "todo: Unary"
-    | Logical _ -> failwith "todo: Logical"
+    | Logical l ->
+        let left = gen_from_expr l.left_expr
+        and right = gen_from_expr l.right_expr in begin
+        match l.operator.token_type with
+          | And -> gen_and_op left right
+          | Or  -> gen_or_op  left right
+          | _ -> failwith "todo: other logical operators"
+        end
     | Var _ -> failwith "todo: Var"
     | Call _ -> failwith "todo: Call"
     | Unit -> failwith "todo: Unit"

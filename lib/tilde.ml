@@ -180,6 +180,9 @@ let tb_inst_cstring = foreign "tb_inst_cstring"
 let tb_inst_sint = foreign "tb_inst_sint"
   (ptr tb_function @-> tb_datatype @-> Ctypes.int64_t @-> returning int)
 
+let tb_inst_uint = foreign "tb_inst_uint"
+  (ptr tb_function @-> tb_datatype @-> Ctypes.uint64_t @-> returning int)
+
 let tb_inst_add = foreign "tb_inst_add"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
 let tb_inst_sub = foreign "tb_inst_sub"
@@ -198,6 +201,11 @@ let tb_inst_cmp_ne = foreign "tb_inst_cmp_ne"
 let tb_inst_cmp_ilt = foreign "tb_inst_cmp_ilt"
   (ptr tb_function @-> int @-> int @-> bool @-> returning int)
 
+let tb_inst_and = foreign "tb_inst_and"
+  (ptr tb_function @-> int @-> int @-> returning int)
+let tb_inst_or = foreign "tb_inst_or"
+  (ptr tb_function @-> int @-> int @-> returning int)
+
 module Register = struct
   type t
 end
@@ -210,25 +218,30 @@ module DataType = struct
     setf dt width (Unsigned.UInt8.of_int width_);
     dt
   
-  let i64_dt = create I64 0
+  let i8_dt   = create I8 0
+  let i64_dt  = create I64 0
   let void_dt = create Void 0
 
   let get_datatype = function
   | Void  -> void_dt
   | I64   -> i64_dt
+  | I8    -> i8_dt
   | _     -> failwith "todo: implement datatype"
 end
 module Inst = struct
   open DataType
   
-  let i64 fp x =
-    tb_inst_sint fp i64_dt (Signed.Int64.of_int x)
+  let i64 fp x = tb_inst_sint fp i64_dt  (Signed.Int64.of_int x)
+  let u8  fp x = tb_inst_uint fp i8_dt (Unsigned.UInt64.of_int x)
+
   let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
   let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)
   let mul fp a b arith_behav = tb_inst_mul fp a b (int_of_arithmatic_behaviour arith_behav)
   let div fp a b arith_behav = tb_inst_div fp a b (int_of_arithmatic_behaviour arith_behav)
   let return fp reg = tb_inst_ret fp reg
   let less_than fp a b = tb_inst_cmp_ilt fp a b true
+  let logical_and fp a b = tb_inst_and fp a b
+  let logical_or fp a b = tb_inst_or fp a b
   let store fp dt addr value align = tb_inst_store fp (get_datatype dt) addr value align
   let load fp dt var align = tb_inst_load fp (get_datatype dt) var align
 end

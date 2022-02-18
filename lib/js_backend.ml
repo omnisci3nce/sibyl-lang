@@ -1,6 +1,8 @@
+open Printf
 open Codegen
+open Lexer
 
-module JS_CodeGen : CodeGenerator = struct
+module CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".js"
   let close_generator g = close_out g.channel
   let generate_begin = ""

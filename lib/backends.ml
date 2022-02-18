@@ -1,3 +1,8 @@
+open Parser
+open Codegen
+open Printf
+open Lexer
+
 module Make (CG : CodeGenerator) = struct
   include CG
 
@@ -178,4 +183,6 @@ module Make (CG : CodeGenerator) = struct
     output
 end
 
-module Tilde = Make (Tilde_backend.CodeGen)
+module JS = Make (Js_backend.CodeGen)
+
+(* module Tilde = Make (Tilde_backend.CodeGen) *)

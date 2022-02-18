@@ -1,8 +1,6 @@
 (* Turn AST into assembly *)
 
 open Lexer
-open Parser
-open Printf
 let _MAX_STACK_SIZE = 1024
 let temp_v_counter = ref 0
 
@@ -71,29 +69,6 @@ let alloc_temp_var g =
     Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
     Hashtbl.add g.variables var_name available; (var_name, available)
 
-type target = AMD64 | AARCH_64 | RISCV | JS | WASM (* Target platforms that I'd like to support *)
 
-module X64_Backend = Backends.Make (X64_CodeGen)
-module JS_Backend = Backend (JS_CodeGen)
-
-let compile ~target filepath (_ast: statement list) =
-  let gen = match target with
-    | AMD64 -> X64_Backend.new_generator filepath
-    | AARCH_64 -> failwith "This backend is not implemented yet"
-    | RISCV -> failwith "This backend is not implemented yet"
-    | JS -> JS_Backend.new_generator filepath
-    | WASM -> failwith "This backend is not implemented yet"
-  in
-  let ch = open_out "output.js" in
-  Printf.fprintf ch "%s" gen.instructions 
-
-let test_gen () = 
-  let s = "let a = (10 + 10) * 20\n" in
-  let ast = s |> tokenise |> parse in
-  print_endline "List: "; List.iter print_stmt ast;
-  let gen = X64_Backend.new_generator "output.s" in
-  printf "Num temp vars: %d\n" !temp_v_counter;
-  let asm = ast |> Optimise.constant_fold |> X64_Backend.codegen gen in
-  printf "Instruction count: %d\n" gen.instruction_count;
-  let ch = open_out gen.filepath in
-  Printf.fprintf ch "%s" asm (* write assembly to file *)
+(* Target platforms that I'd like to support *)
+(* type target = AMD64 | AARCH_64 | RISCV | JS | WASM  *)

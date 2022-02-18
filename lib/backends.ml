@@ -215,7 +215,8 @@ module Tilde = struct
   let gen_mul_op a b =
       tb_inst_mul init_func a b (int_of_arithmatic_behaviour AssumeNSW)
 
-  let gen_from_expr = function
+  let rec gen_from_expr = function
+    | Grouping e -> gen_from_expr e.expr
     | Binary b -> begin
       match b.operator with
       | t when t.token_type = Plus -> (
@@ -225,6 +226,11 @@ module Tilde = struct
           and b = gen_int_const b in
           let sum = gen_add_op a b in
           sum
+        | IntConst a, e ->
+            let e_reg = gen_from_expr e in
+            let a = gen_int_const a in
+            let sum = gen_add_op a e_reg in
+            sum
         | _ -> failwith "todo"
       )
       | t when t.token_type = Star -> (

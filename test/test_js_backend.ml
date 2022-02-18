@@ -1,5 +1,5 @@
-open Paper
-open Paper.Codegen
+open Sibyl
+open Sibyl.Codegen
 
 let run cmd =
   let inp = Unix.open_process_in cmd in

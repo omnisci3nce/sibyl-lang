@@ -1,4 +1,4 @@
-open Paper
+open Sibyl
 
 let pprint_expr ppf e = let open Parser in match e with
   | IntConst x -> Fmt.pf ppf "IntConst %d" x

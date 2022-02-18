@@ -1,5 +1,5 @@
 (* The tests *)
-open Paper
+open Sibyl
 
 let pprint_token_type ppf tt = Fmt.pf ppf "%s" (Lexer.str_of_token_type tt)
 

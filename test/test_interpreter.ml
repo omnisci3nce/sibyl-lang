@@ -1,5 +1,5 @@
-open Paper
-open Paper.Interpreter
+open Sibyl
+open Sibyl.Interpreter
 
 let pprint_value ppf v = Fmt.pf ppf "%s" (string_of_value v)
 

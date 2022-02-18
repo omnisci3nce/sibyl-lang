@@ -1,3 +1,4 @@
-(executables
- (names main)
- (libraries sibyl cinterop experiment logs))
+(executable
+ (name main)
+ (libraries sibyl cinterop experiment logs)
+ (foreign_archives ../deps/tb/tb))

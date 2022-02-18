@@ -158,14 +158,14 @@ let function_build = foreign "tb_prototype_build"
 let function_compile = foreign "tb_module_compile_func"
   (ptr tb_module @-> ptr tb_function @-> returning bool)
 
-(* let tb_function_print = foreign "tb_function_print"
-  (ptr tb_function @-> returning void) *)
+let tb_extern_create = foreign "tb_extern_create"
+  (ptr tb_module @-> string @-> returning int)
+
+let tb_inst_ecall = foreign "tb_inst_ecall"
+  (ptr tb_function @-> tb_datatype @-> int @-> int @-> ptr int @-> returning int)
 
 (* let tb_inst_param_addr = foreign "tb_inst_param_addr"
   (ptr tb_function @-> int @-> returning int) *)
-
-(* let tb_inst_load = foreign "tb_inst_load"
-  (ptr tb_function @-> tb_datatype @-> tb_register @->  *)
 
   (* TB_API TB_Reg tb_inst_local(TB_Function* f, uint32_t size, TB_CharUnits align);
 	TB_API TB_Reg tb_inst_load(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_CharUnits align);

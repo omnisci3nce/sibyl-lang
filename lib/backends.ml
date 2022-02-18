@@ -184,11 +184,13 @@ open Tilde
 
 (* Only deal with 64bit ints at the moment *)
 let i64_dt = DataType.create I64 0
+let void_dt = DataType.create VOID 0
 
 (* Global context *)
 let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
 let init_proto = function_create g_module 0 i64_dt 0 false
 let init_func = function_build g_module init_proto "init" 0
+let printf_handle = tb_extern_create g_module "printf"
 
 let variables = Hashtbl.create 100
 
@@ -231,7 +233,10 @@ module Tilde = struct
         let value = gen_from_expr ld.expr in
         tb_inst_store init_func i64_dt name value 4
     | FunctionDecl _ -> failwith "todo"
-    | Print _ -> failwith "todo"
+    | Print e ->
+        let value = gen_from_expr e in
+        tb_inst_ecall init_func void_dt printf_handle 2
+
     | Expression _ -> failwith "todo"
     | Return _ -> failwith "todo"
   let codegen (ast: statement list) =

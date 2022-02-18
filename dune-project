@@ -1,3 +1,3 @@
 (lang dune 2.9)
-(name paper)
+(name sibyl)
 (using menhir 2.1)

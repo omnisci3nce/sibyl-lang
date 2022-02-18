@@ -121,9 +121,8 @@ let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
   let t = Lexer.tokenise "
-  let a = !((false || true) && true)
-  let result = if a then 5 else 10
-  print result
+  let is_magic = True
+  print is_magic
   " in
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in

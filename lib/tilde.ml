@@ -123,11 +123,6 @@ let ttype = field tb_datatype "type" uint8_t
 let width = field tb_datatype "width" uint8_t
 let () = seal tb_datatype
 
-(*
-type register_t
-let tb_register : register_t structure typ = structure "TB_Register"
-*)
-
 let tb_feature_set_zero = foreign "tb_feature_set_zero"
   (void @-> returning feature_set)
   
@@ -136,12 +131,6 @@ let module_create = foreign "tb_module_create"
   
 let module_compile = foreign "tb_module_compile"
   (ptr tb_module @-> returning bool)
-
-(* type file_t
-let file_ptr : file_t structure typ = structure "FILE" *)
-
-(* let fopen = foreign "fopen"
-  (string @-> string @-> returning (ptr file_ptr)) *)
 
 let module_export = foreign "tb_module_export"
   (ptr tb_module @-> string @-> bool @-> returning bool)
@@ -161,31 +150,21 @@ let function_compile = foreign "tb_module_compile_func"
 let tb_extern_create = foreign "tb_extern_create"
   (ptr tb_module @-> string @-> returning int)
 
-(* TB_API TB_Label tb_inst_new_label_id(TB_Function* f); *)
 let tb_inst_new_label_id = foreign "tb_inst_new_label_id"
   (ptr tb_function @-> returning int)
 
 let tb_inst_label = foreign "tb_inst_label"
   (ptr tb_function @-> int @-> returning int)
-	(* TB_API TB_Reg tb_inst_label(TB_Function* f, TB_Label id); *)
 
 let tb_inst_if = foreign "tb_inst_if"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
-  (* TB_API TB_Reg tb_inst_if(TB_Function* f, TB_Reg cond, TB_Label if_true, TB_Label if_false); *)
 
 let tb_inst_goto = foreign "tb_inst_goto"
   (ptr tb_function @-> int @-> returning void)
-(* TB_API void tb_inst_goto(TB_Function* f, TB_Label id); *)
 
 let tb_inst_ecall = foreign "tb_inst_ecall"
   (ptr tb_function @-> tb_datatype @-> int @-> int @-> ptr int @-> returning int)
 
-(* let tb_inst_param_addr = foreign "tb_inst_param_addr"
-  (ptr tb_function @-> int @-> returning int) *)
-
-  (* TB_API TB_Reg tb_inst_local(TB_Function* f, uint32_t size, TB_CharUnits align);
-	TB_API TB_Reg tb_inst_load(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_CharUnits align);
-	TB_API void tb_inst_store(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_Reg val, TB_CharUnits align); *)
 let tb_inst_local = foreign "tb_inst_local"
   (ptr tb_function @-> int @-> int @-> returning int)
 
@@ -195,7 +174,6 @@ let tb_inst_load = foreign "tb_inst_load"
 let tb_inst_store = foreign "tb_inst_store"
   (ptr tb_function @-> tb_datatype @-> int @-> int @-> int @-> returning void)
 
-  (* TB_API TB_Reg tb_inst_cstring(TB_Function* f, const char* str); *)
 let tb_inst_cstring = foreign "tb_inst_cstring"
   (ptr tb_function @-> string @-> returning int)
 
@@ -213,12 +191,6 @@ let tb_inst_div = foreign "tb_inst_div"
 let tb_inst_ret = foreign "tb_inst_ret"
   (ptr tb_function @-> int @-> returning void)
 
-  (* TB_API TB_Reg tb_inst_cmp_eq(TB_Function* f, TB_Reg a, TB_Reg b);
-	TB_API TB_Reg tb_inst_cmp_ne(TB_Function* f, TB_Reg a, TB_Reg b);
-	TB_API TB_Reg tb_inst_cmp_ilt(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
-	TB_API TB_Reg tb_inst_cmp_ile(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
-	TB_API TB_Reg tb_inst_cmp_igt(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
-	TB_API TB_Reg tb_inst_cmp_ige(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness); *)
 let tb_inst_cmp_eq = foreign "tb_inst_cmp_eq"
   (ptr tb_function @-> int @-> int @-> returning int)
 let tb_inst_cmp_ne = foreign "tb_inst_cmp_ne"

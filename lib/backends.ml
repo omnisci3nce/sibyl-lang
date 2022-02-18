@@ -2,8 +2,6 @@ open Parser
 open Tilde
 open Tilde.DataType
 
-(* Only deal with 64bit ints at the moment *)
-
 (* Global context *)
 let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
 let init_proto = Function.create g_module I64
@@ -137,7 +135,7 @@ module Tilde = struct
     | Print e -> (
       match e with
       | Var v ->
-        let format_string = tb_inst_cstring init_func "sum: %lld\n" in
+        let format_string = tb_inst_cstring init_func "result: %lld\n" in
         let var = Hashtbl.find variables v in
         let value = Inst.load init_func I64 var 8 in
         let arr = make_params_array [format_string; value] in

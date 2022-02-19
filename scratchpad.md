@@ -5,8 +5,8 @@
     let _ = print_string " -> linker"; Sys.command "gcc -no-pie -nostartfiles output.o -o output.exe" in
     print_string " -> executable!\n"; flush stdout; let _ =  Sys.command "node ./output.js" in *)
     
-
-(* module Make (CG : CodeGenerator) = struct
+```ocaml
+module Make (CG : CodeGenerator) = struct
   include CG
 
   let rec gen_from_expr gen expr : (generator * string) = match expr with
@@ -185,4 +185,4 @@
     let output = generate_begin ^ generate_entrypoint ^  final.instructions ^ generate_end ^ generate_exit in
     output
 end
-*)
+```

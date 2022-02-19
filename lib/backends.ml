@@ -20,16 +20,13 @@ module Tilde = struct
     Hashtbl.add variables identifier reg;
     reg
 
-  let gen_int_const x =
-    Inst.i64 init_func x
-  let gen_add_op a b =
-    Inst.add init_func a b AssumeNSW
-  let gen_sub_op a b =
-    Inst.sub init_func a b AssumeNSW
-  let gen_mul_op a b =
-    Inst.mul init_func a b AssumeNSW
-  let gen_div_op a b =
-    Inst.div init_func a b AssumeNSW
+  let gen_int_const x = Inst.i64 init_func x
+  let gen_add_op a b = Inst.add init_func a b AssumeNSW
+  let gen_sub_op a b = Inst.sub init_func a b AssumeNSW
+  let gen_mul_op a b = Inst.mul init_func a b AssumeNSW
+  let gen_div_op a b = Inst.div init_func a b AssumeNSW
+  let gen_less_than_op a b = Inst.less_than init_func a b
+
   let rec gen_from_expr = function
     | IntConst i -> gen_int_const i
     | Grouping e -> gen_from_expr e.expr
@@ -51,6 +48,11 @@ module Tilde = struct
         let a = gen_from_expr b.left_expr
         and b = gen_from_expr b.right_expr in
         gen_div_op a b
+      | LessThan ->
+        let a = gen_from_expr b.left_expr
+        and b = gen_from_expr b.right_expr in
+        let result = gen_less_than_op a b in
+        result
       | _ -> failwith "todo"
     end
     | _ -> failwith "todo"

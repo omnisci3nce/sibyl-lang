@@ -197,6 +197,19 @@ let tb_inst_div = foreign "tb_inst_div"
 let tb_inst_ret = foreign "tb_inst_ret"
   (ptr tb_function @-> int @-> returning void)
 
+  (* TB_API TB_Reg tb_inst_cmp_eq(TB_Function* f, TB_Reg a, TB_Reg b);
+	TB_API TB_Reg tb_inst_cmp_ne(TB_Function* f, TB_Reg a, TB_Reg b);
+	TB_API TB_Reg tb_inst_cmp_ilt(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
+	TB_API TB_Reg tb_inst_cmp_ile(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
+	TB_API TB_Reg tb_inst_cmp_igt(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness);
+	TB_API TB_Reg tb_inst_cmp_ige(TB_Function* f, TB_Reg a, TB_Reg b, bool signedness); *)
+let tb_inst_cmp_eq = foreign "tb_inst_cmp_eq"
+  (ptr tb_function @-> int @-> int @-> returning int)
+let tb_inst_cmp_ne = foreign "tb_inst_cmp_ne"
+  (ptr tb_function @-> int @-> int @-> returning int)
+let tb_inst_cmp_ilt = foreign "tb_inst_cmp_ilt"
+  (ptr tb_function @-> int @-> int @-> bool @-> returning int)
+
 module Register = struct
   type t
 end
@@ -227,6 +240,7 @@ module Inst = struct
   let mul fp a b arith_behav = tb_inst_mul fp a b (int_of_arithmatic_behaviour arith_behav)
   let div fp a b arith_behav = tb_inst_div fp a b (int_of_arithmatic_behaviour arith_behav)
   let return fp reg = tb_inst_ret fp reg
+  let less_than fp a b = tb_inst_cmp_ilt fp a b true
   let store fp dt addr value align = tb_inst_store fp (get_datatype dt) addr value align
   let load fp dt var align = tb_inst_load fp (get_datatype dt) var align
 end

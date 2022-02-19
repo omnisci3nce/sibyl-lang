@@ -1,0 +1,2 @@
+let result = 9 + 5 * (19 - (3 * 3)) + (72 / 4)
+print result

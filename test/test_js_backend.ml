@@ -7,8 +7,8 @@ let run cmd =
   close_in inp; r
 
 let run_source_and_collect_output source =
-  let gen = JS_Backend.new_generator "test.js" in
-  let instr = source |> Lexer.tokenise |> Parser.parse |> JS_Backend.codegen gen in
+  let gen = Js_Backend.new_generator "test.js" in
+  let instr = source |> Lexer.tokenise |> Parser.parse |> Js_Backend.codegen gen in
   let ch = open_out "test.js" in
   Printf.fprintf ch "%s" instr; flush ch; close_out ch;
   (* let return_code =  Sys.command "node ./test.js" in *)

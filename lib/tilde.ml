@@ -192,6 +192,8 @@ let tb_inst_sub = foreign "tb_inst_sub"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
 let tb_inst_mul = foreign "tb_inst_mul"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
+let tb_inst_div = foreign "tb_inst_div"
+  (ptr tb_function @-> int @-> int @-> int @-> returning int)
 let tb_inst_ret = foreign "tb_inst_ret"
   (ptr tb_function @-> int @-> returning void)
 
@@ -206,11 +208,27 @@ module DataType = struct
     setf dt ttype (uint_of_type value_type);
     setf dt width (Unsigned.UInt8.of_int width_);
     dt
+  
+  let i64_dt = create I64 0
+  let void_dt = create Void 0
+
+  let get_datatype = function
+  | Void  -> void_dt
+  | I64   -> i64_dt
+  | _     -> failwith "todo: implement datatype"
 end
-module Instructions = struct
-  (* let inst_iconst fp dt number : int = tb_inst_iconst fp dt number *)
-  let inst_add fp a b arith_behav = tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
-  let inst_return fp reg = tb_inst_ret fp reg
+module Inst = struct
+  open DataType
+  
+  let i64 fp x =
+    tb_inst_sint fp i64_dt (Signed.Int64.of_int x)
+  let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
+  let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)
+  let mul fp a b arith_behav = tb_inst_mul fp a b (int_of_arithmatic_behaviour arith_behav)
+  let div fp a b arith_behav = tb_inst_div fp a b (int_of_arithmatic_behaviour arith_behav)
+  let return fp reg = tb_inst_ret fp reg
+  let store fp dt addr value align = tb_inst_store fp (get_datatype dt) addr value align
+  let load fp dt var align = tb_inst_load fp (get_datatype dt) var align
 end
 
 module Module = struct
@@ -221,5 +239,13 @@ module Module = struct
 
 end
 module Function = struct
-  let create m name = function_create m name
+  open DataType
+  let create m dt = function_create m 0 (get_datatype dt) 0 false
+  let build m p name = function_build m p name 0
 end
+
+
+let make_params_array params = 
+  let arr = Ctypes.CArray.make Ctypes.int (List.length params) in
+  List.iteri (fun i p -> CArray.set arr i p) params;
+  arr

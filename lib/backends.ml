@@ -95,35 +95,30 @@ module Tilde = struct
           | Or  -> { typ = VBool; reg = (gen_or_op fp left.reg right.reg) }
           | _ -> failwith "todo: other logical operators"
         end
-    | Var v -> print_endline "Hello\n"; flush stdout;
+    | Var v ->
                 let value = Hashtbl.find var_env v in
-                print_string v; flush stdout; value
+                let reg = Inst.load fp I64 value.reg 8 in
+                { value with reg = reg} 
     | Call c -> (
-        (* print_hashtbl func_env; *)
-        print_hashtbl var_env;
-
+        let ident = match c.callee with
+          | Var s -> s
+          | _ -> failwith "todo" in
         let arg = gen_from_expr fp func_env var_env (List.nth c.arguments 0) in 
         let arr = make_params_array [arg.reg] in
-        let result = tb_inst_call fp (get_datatype I64) fp 1 (Ctypes.CArray.start arr) in
+        let function_pointer = Hashtbl.find func_env ident in
+        let result = tb_inst_call fp (get_datatype I64) function_pointer 1 (Ctypes.CArray.start arr) in
         { typ = VInt; reg = result }
       )
     | Unit -> failwith "todo: Unit"
 
   let rec gen_from_stmt fp func_env var_env = function
     | LetDecl ld ->
-        print_endline "HERE0\n";
         (* Allocate variable *)
         let name = alloc_var fp var_env ld.identifier in
         (* Evaluate *)
-        print_endline "HERE1\n";
-        print_hashtbl var_env;
-        print_endline (string_of_expr ld.expr);
-        flush stdout;
         let value = gen_from_expr fp func_env var_env ld.expr in
         (* Store *)
-        print_endline "HERE2\n";
         let _ = Inst.store fp I64 name value.reg 8 in
-        print_endline "HERE3\n";
         ()
     | FunctionDecl { name; params; body } ->
         let func_proto = Function.create g_module I64 1 in
@@ -138,14 +133,14 @@ module Tilde = struct
         let scoped_env = Hashtbl.create (List.length params) in
 
         List.iteri (fun i tok -> 
-          print_endline "1 param\n";
-          let v = { typ = VInt; reg = tb_inst_param_addr func i } in
+          let p_addr = tb_inst_param_addr func i in
+          let v = { typ = VInt; reg = p_addr } in
           Hashtbl.add scoped_env tok.lexeme v
         ) params;
 
         let rec inner env stmts = match stmts with
           | [] -> ()
-          | s :: rest -> print_stmt s; gen_from_stmt fp func_env env s; inner env rest in
+          | s :: rest -> gen_from_stmt func func_env env s; inner env rest in
         (* Generate function body *)
         inner scoped_env body;
 
@@ -154,7 +149,6 @@ module Tilde = struct
       match e with
       | Var v ->
         let format_string = tb_inst_cstring fp "result: %lld\n" in
-        Printf.printf "var: %s\n" v;
         let var = Hashtbl.find var_env v in
         let value = Inst.load fp I64 var.reg 8 in
         let arr = make_params_array [format_string; value] in
@@ -164,6 +158,7 @@ module Tilde = struct
     ) 
     | Expression _ -> failwith "todo"
     | Return ve ->
+
       let value = gen_from_expr fp func_env var_env ve.value in
       Inst.return fp value.reg;
       let _ = function_compile g_module fp in

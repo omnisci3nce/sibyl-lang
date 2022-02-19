@@ -40,7 +40,7 @@ let rec string_of_expr e = match e with
     | Call _ -> "Call"
     | Unit -> "Unit"
 
-let print_stmt s = match s with
+let rec print_stmt s = match s with
   | Expression e ->
     begin
     match e with
@@ -53,7 +53,7 @@ let print_stmt s = match s with
     | _ -> print_endline ("Expr " ^ string_of_expr e)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).lexeme
+  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).lexeme; List.iter (fun s -> print_stmt s) f.body
   | Return _ -> print_endline "Return"
 
 let at_end t = List.length t = 0

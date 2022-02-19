@@ -3,5 +3,5 @@ fn fib(n) {
             else fib(n - 1) + fib(n - 2)
     return a
   }
-let a = fib(12)
+let a = fib(20)
 print a

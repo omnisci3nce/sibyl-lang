@@ -1,0 +1,2 @@
+let x = if 5 < 10 then 10 else (if a < 20 then 6 else 3)
+print x

@@ -161,6 +161,22 @@ let function_compile = foreign "tb_module_compile_func"
 let tb_extern_create = foreign "tb_extern_create"
   (ptr tb_module @-> string @-> returning int)
 
+(* TB_API TB_Label tb_inst_new_label_id(TB_Function* f); *)
+let tb_inst_new_label_id = foreign "tb_inst_new_label_id"
+  (ptr tb_function @-> returning int)
+
+let tb_inst_label = foreign "tb_inst_label"
+  (ptr tb_function @-> int @-> returning int)
+	(* TB_API TB_Reg tb_inst_label(TB_Function* f, TB_Label id); *)
+
+let tb_inst_if = foreign "tb_inst_if"
+  (ptr tb_function @-> int @-> int @-> int @-> returning int)
+  (* TB_API TB_Reg tb_inst_if(TB_Function* f, TB_Reg cond, TB_Label if_true, TB_Label if_false); *)
+
+let tb_inst_goto = foreign "tb_inst_goto"
+  (ptr tb_function @-> int @-> returning void)
+(* TB_API void tb_inst_goto(TB_Function* f, TB_Label id); *)
+
 let tb_inst_ecall = foreign "tb_inst_ecall"
   (ptr tb_function @-> tb_datatype @-> int @-> int @-> ptr int @-> returning int)
 

@@ -1,9 +1,2 @@
-fn addFive(n) {
-  return n + 5
-}
-
-let a = addFive(15)
-
-let x = if a < 10 then 10 else (if a < 20 then 6 else 3)
-
+let x = if 5 < 10 then 20 else 30
 print x

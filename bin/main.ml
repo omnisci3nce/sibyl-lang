@@ -10,7 +10,8 @@ let run_file ~parse:only_parse filename =
   if not only_parse then
     let _ = ast |> Backends.Tilde.codegen in
     ()
-  else ()
+  else
+    List.iter Parser.print_stmt ast
 
 let () =
   Logs.set_level @@ Some Logs.Debug;

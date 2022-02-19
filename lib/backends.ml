@@ -55,7 +55,75 @@ module Tilde = struct
         result
       | _ -> failwith "todo"
     end
-    | _ -> failwith "todo"
+    (* 
+  TB_Label if_true = tb_inst_new_label_id(func);
+	TB_Label if_false = tb_inst_new_label_id(func);
+
+    // if (n < 2)
+	tb_inst_if(func, tb_inst_cmp_ilt(func, n, tb_inst_sint(func, TB_TYPE_I32, 2), true), if_true, if_false);
+	
+	// then
+	{
+		tb_inst_label(func, if_true);
+		tb_inst_ret(func, n);
+	}
+	
+	// else
+	{
+		tb_inst_label(func, if_false);
+		
+		TB_Register n_minus_one = tb_inst_sub(func, n, tb_inst_sint(func, TB_TYPE_I32, 1), TB_ASSUME_NUW);
+		TB_Register call1 = tb_inst_call(func, TB_TYPE_I32, func, 1, (TB_Register[]) { n_minus_one });
+		
+		TB_Register n_minus_two = tb_inst_sub(func, n, tb_inst_sint(func, TB_TYPE_I32, 2), TB_ASSUME_NUW);
+		TB_Register call2 = tb_inst_call(func, TB_TYPE_I32, func, 1, (TB_Register[]) { n_minus_two });
+		
+		TB_Register sum = tb_inst_add(func, call1, call2, TB_ASSUME_NUW);
+		tb_inst_ret(func, sum);
+	}
+    *)
+    | IfElse ie ->
+      let fp = init_func in
+
+      (* Setup result register *)
+      let result = tb_inst_local fp 8 8 in
+
+      (* Evaluate condition *)
+      let cond = gen_from_expr ie.condition in
+
+      (* Setup labels *)
+      let if_true = tb_inst_new_label_id fp
+      and if_false = tb_inst_new_label_id fp
+      and end_if = tb_inst_new_label_id fp in
+
+      (* Branch *)
+      let _ = tb_inst_if fp cond if_true if_false in
+
+      (* Then branch *)
+      let _ = tb_inst_label fp if_true in
+        (* Evaluate then branch *)
+        let then_result = gen_from_expr ie.then_branch in
+        let _ = Inst.store fp I64 result then_result 8 in
+        (* Goto end *)
+        let _ = tb_inst_goto fp end_if in
+
+      (* Else branch *)
+      let _ = tb_inst_label fp if_false in
+        (* Evaluate else branch *)
+        let else_result = gen_from_expr ie.else_branch in
+        let _ = Inst.store fp I64 result else_result 8 in
+
+      (* End IfElse expression *)
+      let _ = tb_inst_label fp end_if in
+      (* Return register with expression result *)
+      result
+
+    | Bool _ -> failwith "todo: Bool"
+    | Unary _ -> failwith "todo: Unary"
+    | Logical _ -> failwith "todo: Logical"
+    | Var _ -> failwith "todo: Var"
+    | Call _ -> failwith "todo: Call"
+    | Unit -> failwith "todo: Unit"
   let gen_from_stmt = function
     | LetDecl ld ->
         (* Allocate variable *)

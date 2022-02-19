@@ -12,9 +12,11 @@ let variables = Hashtbl.create 100
 
 type register = int
 
-type value =
-  | Int of register
-  | Bool of register
+type value_type = VInt | VBool
+type value = {
+  typ: value_type;
+  reg: register
+}
 
 module Tilde = struct
   let alloc_var identifier =
@@ -35,32 +37,18 @@ module Tilde = struct
   let gen_or_op a b = Inst.logical_or init_func a b
 
   let rec gen_from_expr = function
-    | IntConst i -> gen_int_const i
-    | Bool b -> gen_bool_const b
+    | IntConst i -> { typ = VInt; reg = gen_int_const i }
+    | Bool b -> { typ = VBool; reg = gen_bool_const b }
     | Grouping e -> gen_from_expr e.expr
-    | Binary b -> begin
-      match b.operator.token_type with
-      | Plus -> 
-        let a = gen_from_expr b.left_expr
-        and b = gen_from_expr b.right_expr in
-        gen_add_op a b
-      | Minus ->
-        let a = gen_from_expr b.left_expr
-        and b = gen_from_expr b.right_expr in
-        gen_sub_op a b
-      | Star -> 
-        let a = gen_from_expr b.left_expr
-        and b = gen_from_expr b.right_expr in
-        gen_mul_op a b
-      | Slash -> 
-        let a = gen_from_expr b.left_expr
-        and b = gen_from_expr b.right_expr in
-        gen_div_op a b
-      | LessThan ->
-        let a = gen_from_expr b.left_expr
-        and b = gen_from_expr b.right_expr in
-        let result = gen_less_than_op a b in
-        result
+    | Binary bin -> begin
+      let a = gen_from_expr bin.left_expr in
+      let b = gen_from_expr bin.right_expr in
+      match bin.operator.token_type with
+      | Plus  -> { typ = VInt; reg = (gen_add_op a.reg b.reg) }
+      | Minus  -> { typ = VInt; reg = (gen_sub_op a.reg b.reg) }
+      | Star  -> { typ = VInt; reg = (gen_mul_op a.reg b.reg) }
+      | Slash  -> { typ = VInt; reg = (gen_div_op a.reg b.reg) }
+      | LessThan  -> { typ = VBool; reg = (gen_less_than_op a.reg b.reg) }
       | _ -> failwith "todo"
     end
     | IfElse ie ->
@@ -78,13 +66,13 @@ module Tilde = struct
       and end_if = tb_inst_new_label_id fp in
 
       (* Branch *)
-      let _ = tb_inst_if fp cond if_true if_false in
+      let _ = tb_inst_if fp cond.reg if_true if_false in
 
       (* Then branch *)
       let _ = tb_inst_label fp if_true in
         (* Evaluate then branch *)
         let then_result = gen_from_expr ie.then_branch in
-        let _ = Inst.store fp I64 result then_result 8 in
+        let _ = Inst.store fp I64 result then_result.reg 8 in
         (* Goto end *)
         let _ = tb_inst_goto fp end_if in
 
@@ -92,20 +80,20 @@ module Tilde = struct
       let _ = tb_inst_label fp if_false in
         (* Evaluate else branch *)
         let else_result = gen_from_expr ie.else_branch in
-        let _ = Inst.store fp I64 result else_result 8 in
+        let _ = Inst.store fp I64 result else_result.reg 8 in
 
       (* End IfElse expression *)
       let _ = tb_inst_label fp end_if in
       (* Return register with expression result *)
-      result
+      { typ = then_result.typ; reg = result }
 
     | Unary _ -> failwith "todo: Unary"
     | Logical l ->
         let left = gen_from_expr l.left_expr
         and right = gen_from_expr l.right_expr in begin
         match l.operator.token_type with
-          | And -> gen_and_op left right
-          | Or  -> gen_or_op  left right
+          | And -> { typ = VBool; reg = (gen_and_op left.reg right.reg) }
+          | Or  -> { typ = VBool; reg = (gen_or_op  left.reg right.reg) }
           | _ -> failwith "todo: other logical operators"
         end
     | Var _ -> failwith "todo: Var"
@@ -118,7 +106,7 @@ module Tilde = struct
         (* Evaluate *)
         let value = gen_from_expr ld.expr in
         (* Store *)
-        let _ = Inst.store init_func I64 name value 8 in
+        let _ = Inst.store init_func I64 name value.reg 8 in
         ()
     | FunctionDecl _ -> failwith "todo"
     | Print e -> (
@@ -146,5 +134,4 @@ module Tilde = struct
     let _ = module_export g_module "./test_x64.obj" true in
     Helpers.print_hashtbl variables;
     ()
-
 end

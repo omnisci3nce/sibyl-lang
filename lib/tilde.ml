@@ -238,19 +238,19 @@ end
 module Inst = struct
   open DataType
   
-  let i64 fp x = tb_inst_sint !fp i64_dt  (Signed.Int64.of_int x)
-  let u8  fp x = tb_inst_uint !fp i8_dt (Unsigned.UInt64.of_int x)
+  let i64 fp x = tb_inst_sint fp i64_dt  (Signed.Int64.of_int x)
+  let u8  fp x = tb_inst_uint fp i8_dt (Unsigned.UInt64.of_int x)
 
-  let add fp a b arith_behav =  tb_inst_add !fp a b (int_of_arithmatic_behaviour arith_behav)
-  let sub fp a b arith_behav = tb_inst_sub !fp a b (int_of_arithmatic_behaviour arith_behav)
-  let mul fp a b arith_behav = tb_inst_mul !fp a b (int_of_arithmatic_behaviour arith_behav)
-  let div fp a b arith_behav = tb_inst_div !fp a b (int_of_arithmatic_behaviour arith_behav)
-  let return fp reg = tb_inst_ret !fp reg
-  let less_than fp a b = tb_inst_cmp_ilt !fp a b true
-  let logical_and fp a b = tb_inst_and !fp a b
-  let logical_or fp a b = tb_inst_or !fp a b
-  let store fp dt addr value align = tb_inst_store !fp (get_datatype dt) addr value align
-  let load fp dt var align = tb_inst_load !fp (get_datatype dt) var align
+  let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
+  let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)
+  let mul fp a b arith_behav = tb_inst_mul fp a b (int_of_arithmatic_behaviour arith_behav)
+  let div fp a b arith_behav = tb_inst_div fp a b (int_of_arithmatic_behaviour arith_behav)
+  let return fp reg = tb_inst_ret fp reg
+  let less_than fp a b = tb_inst_cmp_ilt fp a b true
+  let logical_and fp a b = tb_inst_and fp a b
+  let logical_or fp a b = tb_inst_or fp a b
+  let store fp dt addr value align = tb_inst_store fp (get_datatype dt) addr value align
+  let load fp dt var align = tb_inst_load fp (get_datatype dt) var align
 end
 
 module Module = struct

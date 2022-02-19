@@ -190,25 +190,26 @@ let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
 let init_proto = function_create g_module 0 i64_dt 0 false
 let init_func = function_build g_module init_proto "init" 0
 
-type value = 
-  | Int of int
+let variables = Hashtbl.create 100
+
+(* type value = 
+  | Int of int *)
 
 module Tilde = struct
-  (* 
-  let proto = function_create g_module 1 i8_dt 0 false in
-  let func = function_build g_module proto "test_add_i8" 0 in
-  let a = tb_inst_sint func i8_dt (a |> int_of_string |> Signed.Int64.of_int) in
-  let b = tb_inst_sint func i8_dt (b |> int_of_string |> Signed.Int64.of_int) in
-  let sum = inst_add func a b AssumeNUW in
-  inst_return func sum;
-  let _ = function_compile g_module func in *)
+  let alloc_var identifier =
+    (* Create local *)
+    let reg = tb_inst_local init_func 8 4 in
+    (* Store *)
+    Hashtbl.add variables identifier reg;
+    reg
+
   let gen_int_const x =
     tb_inst_sint init_func i64_dt (Signed.Int64.of_int x)
   
   let gen_add_op a b =
     Instructions.inst_add init_func a b AssumeNSW
 
-  let rec gen_from_expr = function
+  let gen_from_expr = function
     | Binary b -> begin
       match b.operator with
       | t when t.token_type = Plus -> (
@@ -217,7 +218,7 @@ module Tilde = struct
           let a = gen_int_const a
           and b = gen_int_const b in
           let sum = gen_add_op a b in
-          Int sum
+          sum
         | _ -> failwith "todo"
       )
       | _ -> failwith "todo"
@@ -228,14 +229,23 @@ module Tilde = struct
         (* Allocate variable *)
         let name = alloc_var ld.identifier in
         let value = gen_from_expr ld.expr in
-        gen_store_int_const name value 
+        tb_inst_store init_func i64_dt name value 4
     | FunctionDecl _ -> failwith "todo"
     | Print _ -> failwith "todo"
     | Expression _ -> failwith "todo"
     | Return _ -> failwith "todo"
   let codegen (ast: statement list) =
+    (* Generate code for each statement *)
     List.iter (fun stmt -> gen_from_stmt stmt; ()) ast;
-
+    let return_code = tb_inst_sint init_func i64_dt (0 |> Signed.Int64.of_int) in
+    (* Return exit code from main function *)
+    Instructions.inst_return init_func return_code;
+    (* Compilation of main function and module *)
+    let _ = function_compile g_module init_func in
+    let _ = module_compile g_module in
+    let _ = module_export g_module "./test_x64.obj" true in
+    Helpers.print_hashtbl variables;
+    ()
 
 end
 

@@ -167,6 +167,18 @@ let function_compile = foreign "tb_module_compile_func"
 (* let tb_inst_load = foreign "tb_inst_load"
   (ptr tb_function @-> tb_datatype @-> tb_register @->  *)
 
+  (* TB_API TB_Reg tb_inst_local(TB_Function* f, uint32_t size, TB_CharUnits align);
+	TB_API TB_Reg tb_inst_load(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_CharUnits align);
+	TB_API void tb_inst_store(TB_Function* f, TB_DataType dt, TB_Reg addr, TB_Reg val, TB_CharUnits align); *)
+let tb_inst_local = foreign "tb_inst_local"
+  (ptr tb_function @-> int @-> int @-> returning int)
+
+let tb_inst_load = foreign "tb_inst_load"
+  (ptr tb_function @-> tb_datatype @-> int @-> int @-> returning int)
+
+let tb_inst_store = foreign "tb_inst_store"
+  (ptr tb_function @-> tb_datatype @-> int @-> int @-> int @-> returning void)
+
 let tb_inst_sint = foreign "tb_inst_sint"
   (ptr tb_function @-> tb_datatype @-> Ctypes.int64_t @-> returning int)
 

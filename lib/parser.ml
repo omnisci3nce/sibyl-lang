@@ -51,7 +51,6 @@ let print_stmt s = match s with
   | Print e -> begin match e with
     | Var v -> printf "Print %s" v
     | _ -> print_endline ("Expr " ^ string_of_expr e)
-    (* | _ -> failwith "dont know how to print this" *)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
   | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name

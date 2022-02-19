@@ -53,7 +53,7 @@ let print_stmt s = match s with
     | _ -> print_endline ("Expr " ^ string_of_expr e)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl f -> printf "FunctionDecl: %s\n" f.name
+  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).lexeme
   | Return _ -> print_endline "Return"
 
 let at_end t = List.length t = 0

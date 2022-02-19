@@ -139,7 +139,7 @@ let function_create = foreign "tb_prototype_create"
   (ptr tb_module @-> int @-> tb_datatype @-> int @-> bool @-> returning (ptr tb_function_prototype))
 
 let function_add_param = foreign "tb_prototype_add_param"
-  (ptr tb_function_prototype @-> ptr tb_datatype @-> returning void)
+  (ptr tb_function_prototype @-> tb_datatype @-> returning void)
 
   (* TB_API TB_Reg tb_inst_param_addr(TB_Function* f, int param_id); *)
 let tb_inst_param_addr = foreign "tb_inst_param_addr"
@@ -150,6 +150,9 @@ let function_build = foreign "tb_prototype_build"
 
 let function_compile = foreign "tb_module_compile_func"
   (ptr tb_module @-> ptr tb_function @-> returning bool)
+
+let tb_inst_call = foreign "tb_inst_call"
+  (ptr tb_function @-> tb_datatype @-> ptr tb_function @-> int @-> ptr int @-> returning int)
 
 let tb_extern_create = foreign "tb_extern_create"
   (ptr tb_module @-> string @-> returning int)
@@ -235,19 +238,19 @@ end
 module Inst = struct
   open DataType
   
-  let i64 fp x = tb_inst_sint fp i64_dt  (Signed.Int64.of_int x)
-  let u8  fp x = tb_inst_uint fp i8_dt (Unsigned.UInt64.of_int x)
+  let i64 fp x = tb_inst_sint !fp i64_dt  (Signed.Int64.of_int x)
+  let u8  fp x = tb_inst_uint !fp i8_dt (Unsigned.UInt64.of_int x)
 
-  let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
-  let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)
-  let mul fp a b arith_behav = tb_inst_mul fp a b (int_of_arithmatic_behaviour arith_behav)
-  let div fp a b arith_behav = tb_inst_div fp a b (int_of_arithmatic_behaviour arith_behav)
-  let return fp reg = tb_inst_ret fp reg
-  let less_than fp a b = tb_inst_cmp_ilt fp a b true
-  let logical_and fp a b = tb_inst_and fp a b
-  let logical_or fp a b = tb_inst_or fp a b
-  let store fp dt addr value align = tb_inst_store fp (get_datatype dt) addr value align
-  let load fp dt var align = tb_inst_load fp (get_datatype dt) var align
+  let add fp a b arith_behav =  tb_inst_add !fp a b (int_of_arithmatic_behaviour arith_behav)
+  let sub fp a b arith_behav = tb_inst_sub !fp a b (int_of_arithmatic_behaviour arith_behav)
+  let mul fp a b arith_behav = tb_inst_mul !fp a b (int_of_arithmatic_behaviour arith_behav)
+  let div fp a b arith_behav = tb_inst_div !fp a b (int_of_arithmatic_behaviour arith_behav)
+  let return fp reg = tb_inst_ret !fp reg
+  let less_than fp a b = tb_inst_cmp_ilt !fp a b true
+  let logical_and fp a b = tb_inst_and !fp a b
+  let logical_or fp a b = tb_inst_or !fp a b
+  let store fp dt addr value align = tb_inst_store !fp (get_datatype dt) addr value align
+  let load fp dt var align = tb_inst_load !fp (get_datatype dt) var align
 end
 
 module Module = struct
@@ -259,16 +262,8 @@ module Module = struct
 end
 module Function = struct
   open DataType
-  let _create m dt = function_create m 0 (get_datatype dt) 0 false
+  let create m dt num_params = function_create m 0 (get_datatype dt) num_params false
   let build m p name = function_build m p name 0
-
-  let create modul name return_type (params: type_t list) =
-    let proto = function_create modul 0
-                          (get_datatype return_type)
-                          (List.length params)
-                          false in
-    let func = build modul proto name in
-    func
 end
 
 

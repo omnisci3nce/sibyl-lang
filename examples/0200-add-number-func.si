@@ -1,0 +1,6 @@
+fn addTen(x) {
+  let result = x + 10
+  return result
+}
+let twenty = addTen(10)
+print twenty

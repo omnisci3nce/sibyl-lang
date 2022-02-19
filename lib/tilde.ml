@@ -179,6 +179,10 @@ let tb_inst_load = foreign "tb_inst_load"
 let tb_inst_store = foreign "tb_inst_store"
   (ptr tb_function @-> tb_datatype @-> int @-> int @-> int @-> returning void)
 
+  (* TB_API TB_Reg tb_inst_cstring(TB_Function* f, const char* str); *)
+let tb_inst_cstring = foreign "tb_inst_cstring"
+  (ptr tb_function @-> string @-> returning int)
+
 let tb_inst_sint = foreign "tb_inst_sint"
   (ptr tb_function @-> tb_datatype @-> Ctypes.int64_t @-> returning int)
 

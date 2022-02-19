@@ -184,7 +184,7 @@ open Tilde
 
 (* Only deal with 64bit ints at the moment *)
 let i64_dt = DataType.create I64 0
-let void_dt = DataType.create VOID 0
+let void_dt = DataType.create Void 0
 
 (* Global context *)
 let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
@@ -234,8 +234,13 @@ module Tilde = struct
         tb_inst_store init_func i64_dt name value 4
     | FunctionDecl _ -> failwith "todo"
     | Print e ->
+        let format_string = tb_inst_cstring init_func "sum: %ld" in
         let value = gen_from_expr e in
-        tb_inst_ecall init_func void_dt printf_handle 2
+        let arr = Ctypes.CArray.make Ctypes.int 2 in
+        Ctypes.CArray.set arr 0 format_string;
+        Ctypes.CArray.set arr 1 value; 
+        let _ = tb_inst_ecall init_func void_dt printf_handle 2 (Ctypes.CArray.start arr) in
+        ()
 
     | Expression _ -> failwith "todo"
     | Return _ -> failwith "todo"

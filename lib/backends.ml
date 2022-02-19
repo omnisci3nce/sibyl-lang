@@ -34,20 +34,20 @@ module Tilde = struct
     | IntConst i -> gen_int_const i
     | Grouping e -> gen_from_expr e.expr
     | Binary b -> begin
-      match b.operator with
-      | t when t.token_type = Plus -> 
+      match b.operator.token_type with
+      | Plus -> 
         let a = gen_from_expr b.left_expr
         and b = gen_from_expr b.right_expr in
         gen_add_op a b
-      | t when t.token_type = Minus ->
+      | Minus ->
         let a = gen_from_expr b.left_expr
         and b = gen_from_expr b.right_expr in
         gen_sub_op a b
-      | t when t.token_type = Star -> 
+      | Star -> 
         let a = gen_from_expr b.left_expr
         and b = gen_from_expr b.right_expr in
         gen_mul_op a b
-      | t when t.token_type = Slash -> 
+      | Slash -> 
         let a = gen_from_expr b.left_expr
         and b = gen_from_expr b.right_expr in
         gen_div_op a b

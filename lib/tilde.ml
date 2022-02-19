@@ -141,6 +141,10 @@ let function_create = foreign "tb_prototype_create"
 let function_add_param = foreign "tb_prototype_add_param"
   (ptr tb_function_prototype @-> ptr tb_datatype @-> returning void)
 
+  (* TB_API TB_Reg tb_inst_param_addr(TB_Function* f, int param_id); *)
+let tb_inst_param_addr = foreign "tb_inst_param_addr"
+  (ptr tb_function @-> int @-> returning int)
+
 let function_build = foreign "tb_prototype_build"
   (ptr tb_module @-> ptr tb_function_prototype @-> string @-> int @-> returning (ptr tb_function))
 

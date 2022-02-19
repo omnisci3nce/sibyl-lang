@@ -10,6 +10,12 @@ let printf_handle = tb_extern_create g_module "printf"
 
 let variables = Hashtbl.create 100
 
+type register = int
+
+type value =
+  | Int of register
+  | Bool of register
+
 module Tilde = struct
   let alloc_var identifier =
     (* Create local *)

@@ -98,15 +98,15 @@ and parse_argument (args: expr list ) tokens =
       next_arg @ args, rem
   | { token_type = RightParen; _ } -> args, tokens
   | _ -> 
-    (* List.iter print_token tokens; *)
     let ex, rem = parse_expression tokens in
-    [ex] @ args, rem
+    let next, rem = parse_argument args rem in
+    [ex] @ next, rem
 and parse_params tokens = match tokens with
   | h :: r when h.token_type = Identifier -> begin
       match match_next r [Comma] with
       | Some _ ->
-        let next, rem = parse_params r in
-        [h] @ next, List.tl rem
+        let next, rem = parse_params (List.tl r) in
+        [h] @ next, rem
       | _ -> [h], r
     end
   | _ -> [], tokens
@@ -117,7 +117,8 @@ and parse_call tokens =
   (* We have an opening parenthesis next so we know it's a function call *)
   | Some _ -> (
     let args, remaining = parse_argument [] (List.tl remaining) in
-    (* print_string "args tokens: "; *)
+    (* print_newline ();
+    print_string "args tokens: "; *)
     (* List.iter print_token remaining; *)
     match match_next remaining [RightParen] with
       | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
@@ -203,6 +204,9 @@ and parse_function tokens : (statement list * token list * token list) =
   | Some _ -> begin
     let rest = List.tl tokens in    
     let params, remaining = parse_params rest in
+    (* List.iter print_token params;
+    print_endline "remaining: ";
+    List.iter print_token remaining; *)
 
     match match_next remaining [RightParen] with
     | Some _ -> begin

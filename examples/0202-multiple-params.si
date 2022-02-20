@@ -1,0 +1,6 @@
+fn add(x, y) {
+  let result = x + y
+  print result
+}
+let sum = add(21, 25)
+print sum

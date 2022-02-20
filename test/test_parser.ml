@@ -148,6 +148,28 @@ let test_one_param_func () =
   } in
     Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
+let test_two_params_func () = 
+  let source = "
+  fn add (x, y) {
+  }
+  " in
+  let stmt, _ = Parser.parse_statement (Lexer.tokenise source) in
+  let expected_output = Parser.FunctionDecl {
+    name = "add";
+    params = [{
+      lexeme = "x";
+      literal = None;
+      location = { line = 1; column = 0 };
+      token_type = Lexer.Identifier;
+    }; {
+      lexeme = "y";
+      literal = None;
+      location = { line = 1; column = 0 };
+      token_type = Lexer.Identifier;
+    }];
+    body = []
+  } in Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
+
 let test_fibonacci_decl () = let open Lexer in let open Parser in
   let fibonacci_new = "
   fn fib(n) {
@@ -253,6 +275,7 @@ let () =
       test_case "Empty function declaration" `Quick test_declare_empty_function;
       test_case "One statement in function body" `Quick test_one_statement_in_function;
       test_case "One param" `Quick test_one_param_func;
+      test_case "Two params" `Quick test_two_params_func;
       test_case "Function call no params" `Quick test_function_call;
       test_case "" `Quick test_parse_call_expr_as_argument;
       test_case "return" `Quick test_return;

@@ -7,18 +7,20 @@ open Printf
 type value =
   Int of int
   | Bool of bool
+  | Unit
 
 type env = (string, value) Hashtbl.t
 
 let string_of_value = function
   | Int x -> sprintf "Int %d" x
   | Bool b -> if b then "True" else "False"
+  | Unit -> "Unit"
 
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %s\n" x (string_of_value y))
 
 let test_value_equality = function
   | Bool b -> b
-  | Int _ -> failwith "this is not of type bool"
+  | _ -> failwith "this is not of type bool"
 
 let rec evaluate func_env var_env (expr: expr) = match expr with
   | IntConst x -> Int x
@@ -68,7 +70,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
         let value = evaluate func_env var_env expr in
         Hashtbl.add scoped_env arg.lexeme (value)  
       ) args;
-      let output = ref (Bool true) in
+      let output = ref (Unit) in
       List.iter (fun s -> 
         let x = evaluate_stmt func_env scoped_env s in
         match x with
@@ -121,12 +123,17 @@ let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
   let t = Lexer.tokenise "
-  let is_magic = True
-  print is_magic
-  " in
+fn add(x, y, z) {
+  let result = x + y + z
+  return result
+}
+let sum = add(21, 25, 50)
+print sum
+" in
+
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t in
   List.iter (fun stmt ->
-    (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
+    print_string "[Statement] "; print_stmt stmt; print_newline ();
     let _ = evaluate_stmt func_env var_env stmt in ()
   ) program

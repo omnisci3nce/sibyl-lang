@@ -24,7 +24,7 @@ In order from most complete to least complete
 ## Vague Roadmap
 
 - [x] Booleans & Ints
-- [Interpreter/JS only] If Else expression
+- [x] If Else expression (Windows x64/Interpreter/JS)
 - [~30% Interp/JS only] Functions
 - Loops
 - String literals

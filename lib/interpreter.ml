@@ -11,6 +11,8 @@ type value =
 
 type env = (string, value) Hashtbl.t
 
+exception RuntimeError of string
+
 let string_of_value = function
   | Int x -> sprintf "Int %d" x
   | Bool b -> if b then "True" else "False"
@@ -57,12 +59,16 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
     )
   | Grouping e -> evaluate func_env var_env e.expr
   | Call c ->
+      let args_length = List.length c.arguments in
       let name = begin match c.callee with
       | Var v -> v
       | _ -> failwith "Call callee has to be Var expression (I think)" 
       end in
       let (args, body) = try Hashtbl.find func_env name with
                           Not_found -> failwith (sprintf "Couldn't find function '%s'" name) in
+      let func_arity = List.length args in
+      if args_length != func_arity then
+        raise (RuntimeError (sprintf "Expected %d arguments but got %d" func_arity args_length)) else
       let scoped_env = Hashtbl.copy var_env in
       List.iteri (fun i arg  ->
         let open Lexer in
@@ -119,9 +125,14 @@ and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl
   | Print e -> let value = evaluate func_env var_env e in print_endline (string_of_value value); None
   | Return r -> Some (evaluate func_env var_env r.value)
 
+let clock: statement list = [
+  Return { value = IntConst (int_of_float (Unix.time ()))}
+]
+
 let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
+  Hashtbl.add func_env "clock" ([], clock);
   let t = Lexer.tokenise "
 fn add(x, y, z) {
   let result = x + y + z
@@ -129,6 +140,8 @@ fn add(x, y, z) {
 }
 let sum = add(21, 25, 50)
 print sum
+let time = clock()
+print time
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)

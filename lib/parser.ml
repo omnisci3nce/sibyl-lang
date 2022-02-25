@@ -20,7 +20,7 @@ type expr =
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; expr: expr }
-  | FunctionDecl of { name: string; params: token list; body: statement list }
+  | FunctionDecl of { name: string; arity: int; params: token list; body: statement list }
   | Print of expr
   | Return of { value: expr }
   
@@ -243,7 +243,7 @@ and parse_statement tokens = match tokens with
   (* starts a function declaration statement *)
   | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
     let body, params, remaining = parse_function rest in
-    FunctionDecl { name = lexeme; params = params; body = body }, remaining
+    FunctionDecl { name = lexeme; arity = List.length params; params = params; body = body }, remaining
   | { token_type = Return; _} :: rest ->
       let ex, rest = parse_expression rest in
       Return { value = ex }, rest

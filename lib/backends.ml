@@ -103,10 +103,10 @@ module Tilde = struct
         let ident = match c.callee with
           | Var s -> s
           | _ -> failwith "todo" in
-        let arg = gen_from_expr fp func_env var_env (List.nth c.arguments 0) in 
-        let arr = make_params_array [arg.reg] in
+        let args = List.map (fun arg -> let e = gen_from_expr fp func_env var_env arg in e.reg) c.arguments in 
+        let arr = make_params_array args in
         let function_pointer = Hashtbl.find func_env ident in
-        let result = tb_inst_call fp (get_datatype I64) function_pointer 1 (Ctypes.CArray.start arr) in
+        let result = tb_inst_call fp (get_datatype I64) function_pointer (List.length c.arguments) (Ctypes.CArray.start arr) in
         { typ = VInt; reg = result }
       )
     | Unit -> failwith "todo: Unit"
@@ -120,8 +120,8 @@ module Tilde = struct
         (* Store *)
         let _ = Inst.store fp I64 name value.reg 8 in
         ()
-    | FunctionDecl { name; params; body } ->
-        let func_proto = Function.create g_module I64 1 in
+    | FunctionDecl { name; arity; params; body } ->
+        let func_proto = Function.create g_module I64 arity in
         List.iteri 
           (fun _ _ ->
             let _ = function_add_param func_proto (DataType.get_datatype I64) in ()

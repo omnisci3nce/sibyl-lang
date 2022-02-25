@@ -150,7 +150,7 @@ and parse_term tokens =
   | _ -> expr, remaining
 and parse_comparison tokens =
   let expr, remaining = parse_term tokens in
-    match match_next remaining [LessThan] with
+  match match_next remaining [LessThan; LesserEqual; GreaterThan; GreaterEqual] with
     | Some t ->
       let ex, rem = parse_comparison (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem
@@ -158,7 +158,7 @@ and parse_comparison tokens =
 
 and parse_equality tokens =
     let (expr, remaining) = parse_comparison tokens in
-    match match_next remaining [EqualEqual] with
+    match match_next remaining [EqualEqual; BangEqual] with
     | Some t ->
       let ex, rem = parse_comparison (List.tl remaining) in
       Binary { left_expr = expr; operator = t; right_expr = ex }, rem

@@ -74,7 +74,8 @@ let test_declare_empty_function () =
   let expected_output = Parser.FunctionDecl {
     name = "hello";
     params = [];
-    body = []
+    body = [];
+    arity = 0;
   } in
   Alcotest.(check stmt_testable) "Correct function name" expected_output stmt
 
@@ -89,6 +90,7 @@ let test_one_statement_in_function () =
   let expected_output = Parser.FunctionDecl {
     name = "hello";
     params = [];
+    arity = 1;
     body = [
       Parser.LetDecl {
         identifier = "a";
@@ -144,6 +146,7 @@ let test_one_param_func () =
       location = { line = 1; column = 0};
       token_type = Lexer.Identifier;
     }];
+    arity = 1;
     body = []
   } in
     Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
@@ -167,6 +170,7 @@ let test_two_params_func () =
       location = { line = 1; column = 0 };
       token_type = Lexer.Identifier;
     }];
+    arity = 2;
     body = []
   } in Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
@@ -191,6 +195,7 @@ let test_fibonacci_decl () = let open Lexer in let open Parser in
         location = { line = 1; column = 0};
         token_type = Identifier;
       }];
+      arity = 1;
       body = []
     };
     LetDecl {

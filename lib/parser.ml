@@ -240,6 +240,9 @@ and parse_statement tokens = match tokens with
   (* starts a print statement *)
   | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest
+  | { token_type = Identifier; lexeme = "print"; _} :: rest ->
+    let expr, rem = parse_expression rest in
+    Print (expr), rem
   (* starts a function declaration statement *)
   | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
     let body, params, remaining = parse_function rest in

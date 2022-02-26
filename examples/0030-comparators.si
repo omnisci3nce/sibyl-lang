@@ -1,0 +1,7 @@
+print (5 < 10)
+print (10 < 10)
+print 10 <= 10)
+print (6 > 3)
+print (3 > 6)
+print (6 >= 6)
+print (6 > 6)

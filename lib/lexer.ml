@@ -185,6 +185,11 @@ let scan_next ctx tokens =
       | true  -> add_token LesserEqual "<=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
       | false -> add_token LessThan "<" None tokens ctx.line ctx.start; ctx
   )
+  | '>' -> (
+      match match_next ctx '=' with
+      | true  -> add_token GreaterEqual ">=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)
+      | false -> add_token GreaterThan ">" None tokens ctx.line ctx.start; ctx
+  )
   | '&' -> (
       match match_next ctx '&' with
       | true  -> add_token And "&&" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)

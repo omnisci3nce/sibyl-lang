@@ -48,6 +48,9 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
         | Minus -> Int (a - b)
         | EqualEqual -> Bool (a = b)
         | LessThan -> Bool (a < b)
+        | LesserEqual -> Bool (a <= b)
+        | GreaterThan -> Bool (a > b)
+        | GreaterEqual -> Bool (a >= b)
         | _ -> failwith "operator"
       )
     | Bool a, Bool b -> (
@@ -130,23 +133,22 @@ let clock: statement list = [
 ]
 
 let test_interpret () =
-  (* let var_env = Hashtbl.create 10 in *)
+  let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
   Hashtbl.add func_env "clock" ([], clock);
   let t = Lexer.tokenise "
-fn add(x, y, z) {
-  let result = x + y + z
-  return result
-}
-let sum = add(b, 25, 50)
-print sum
-let time = clock()
-print time
+  print (5 < 10)
+  print (10 < 10)
+  print (10 <= 10)
+  print (6 > 3)
+  print (3 > 6)
+  print (6 >= 6)
+  print (6 > 6)
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   let program = parse t |> Semantic_analysis.check_vars in
   List.iter (fun stmt ->
     print_string "[Statement] "; print_stmt stmt; print_newline ();
-    (* let _ = evaluate_stmt func_env var_env stmt in () *)
+    let _ = evaluate_stmt func_env var_env stmt in ()
   ) program

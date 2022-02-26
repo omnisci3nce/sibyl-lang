@@ -90,7 +90,7 @@ let test_one_statement_in_function () =
   let expected_output = Parser.FunctionDecl {
     name = "hello";
     params = [];
-    arity = 1;
+    arity = 0;
     body = [
       Parser.LetDecl {
         identifier = "a";

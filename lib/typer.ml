@@ -24,22 +24,41 @@ module StaticEnv = struct
     (x, ty) :: env
 end
 
-let type_of env = function
+let type_annot_to_typ = function
+  | "bool" -> TBool
+  | "int"  -> TInt
+  | _ -> failwith "unknown type annotation"
+
+let rec type_of env = function
   | Bool _ -> TBool
   | IntConst _ -> TInt
   | Var s -> StaticEnv.lookup env s
+  | Binary { left_expr; right_expr; _ } ->
+    let left_type = type_of env left_expr
+    and right_type = type_of env right_expr in
+    if left_type != right_type then raise (TypeError "binary op types mismatch")
+    else left_type
   | _ -> failwith "yeah nah"
 
+let unwrap_opt = function
+  | Some v -> v
+  | None -> failwith "cooked"
+
 let typecheck (prog: program) : program =
-  let env = StaticEnv.empty in
-  (* Iterate through each statement *)
+  (* let check_expr env expr = match expr with
+    | _ -> let _ = type_of env expr in env
+  in *)
   let check_stmt env stmt = match stmt with
-    | LetDecl { identifier; _ } ->
-      (* Check that identifier isn't already defined *)
-      let typ = StaticEnv.lookup env identifier in
+    | LetDecl { identifier; type_annot; expr; _ } ->
+      let annotated_type = type_annot_to_typ (unwrap_opt type_annot) in
+      let new_env = StaticEnv.extend env identifier annotated_type in
+      let expr_type = type_of new_env expr in
+      if expr_type != annotated_type then raise (TypeError "let decl type mismatch")
+      else new_env
       
-    | FunctionDecl _ -> ()
-    | _ -> ()
+    | FunctionDecl _ -> env
+    | _ -> env
   in
+  let _ = List.fold_left check_stmt (StaticEnv.empty) prog in
   (* List.iter (fun stmt -> check_stmt prog; *)
   prog

@@ -18,6 +18,7 @@ type token_type =
   | Pipe
   | Bang
   | Comma
+  | Colon
 
   (* two char tokens *)
   | EqualEqual
@@ -170,6 +171,7 @@ let scan_next ctx tokens =
   | '+' -> add_token Plus "+" None tokens ctx.line ctx.start; ctx
   | '-' -> add_token Minus "-" None tokens ctx.line ctx.start; ctx
   | '*' -> add_token Star "*" None tokens ctx.line ctx.start; ctx
+  | ':' -> add_token Colon ":" None tokens ctx.line ctx.start; ctx
   | '!' -> (
       match match_next ctx '=' with
       | true  -> add_token BangEqual "!=" None tokens ctx.line ctx.start; { ctx with current = ctx.current + 1 } (* consume that 2nd char *)

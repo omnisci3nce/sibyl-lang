@@ -77,7 +77,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
         let open Lexer in
         let expr = (List.nth c.arguments i) in
         let value = evaluate func_env var_env expr in
-        Hashtbl.add scoped_env arg.lexeme (value)  
+        Hashtbl.add scoped_env arg.token.lexeme (value)  
       ) args;
       let output = ref (Unit) in
       List.iter (fun s -> 
@@ -114,7 +114,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
   | Var v -> try Hashtbl.find var_env v with
               Not_found -> failwith (sprintf "Couldn't find variable '%s': (%s)" v (string_of_expr expr))
 
-and evaluate_stmt (func_env: (string, Lexer.token list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option =
+and evaluate_stmt (func_env: (string, func_param list * statement list) Hashtbl.t) (var_env: (string, value) Hashtbl.t) stmt : value option =
   match stmt with
   | LetDecl l -> 
       let value = evaluate func_env var_env l.expr in
@@ -135,19 +135,18 @@ let clock: statement list = [
 let test_interpret () =
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
-  Hashtbl.add func_env "clock" ([], clock);
+  (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  print (5 < 10)
-  print (10 < 10)
-  print (10 <= 10)
-  print (6 > 3)
-  print (3 > 6)
-  print (6 >= 6)
-  print (6 > 6)
+  fn AND(left: bool, right: bool) {
+    let result = left && right
+    return result
+}
+let output = AND(true, false)
+print output
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
-  let program = parse t |> Semantic_analysis.check_vars in
+  let program = parse t in
   List.iter (fun stmt ->
     print_string "[Statement] "; print_stmt stmt; print_newline ();
     let _ = evaluate_stmt func_env var_env stmt in ()

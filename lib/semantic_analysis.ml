@@ -1,7 +1,11 @@
 open Parser
-open Lexer
+(* open Lexer *)
 
-let rec _check_vars func_env var_env prog  =
+let check_types (prog: statement list): statement list =
+  prog
+
+
+(* let rec _check_vars func_env var_env prog  =
 
   let rec check_expr fenv venv expr = match expr with
     | Var v -> begin match Hashtbl.find_opt venv v with
@@ -35,9 +39,9 @@ let rec _check_vars func_env var_env prog  =
     | _ -> stmt in
     ()
   ) prog;
-  prog
+  prog *)
 
-let check_vars = 
+(* let check_vars = 
   let var_env = Hashtbl.create 10 in
   let func_env = Hashtbl.create 10 in
-  _check_vars func_env var_env
+  _check_vars func_env var_env *)

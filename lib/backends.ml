@@ -132,10 +132,10 @@ module Tilde = struct
         (* Add params into env  *)
         let scoped_env = Hashtbl.create (List.length params) in
 
-        List.iteri (fun i tok -> 
+        List.iteri (fun i param -> 
           let p_addr = tb_inst_param_addr func i in
           let v = { typ = VInt; reg = p_addr } in
-          Hashtbl.add scoped_env tok.lexeme v
+          Hashtbl.add scoped_env param.token.lexeme v
         ) params;
 
         let rec inner env stmts = match stmts with

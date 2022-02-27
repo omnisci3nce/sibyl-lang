@@ -141,11 +141,13 @@ let test_one_param_func () =
   let expected_output = Parser.FunctionDecl {
     name = "hello";
     params = [{
+      type_annot = None;
+      token = {
       lexeme = "a";
       literal = None;
       location = { line = 1; column = 0};
       token_type = Lexer.Identifier;
-    }];
+    }}];
     arity = 1;
     body = []
   } in
@@ -160,16 +162,20 @@ let test_two_params_func () =
   let expected_output = Parser.FunctionDecl {
     name = "add";
     params = [{
+      type_annot = None;
+      token = {
       lexeme = "x";
       literal = None;
       location = { line = 1; column = 0 };
       token_type = Lexer.Identifier;
-    }; {
+    }}; {
+      type_annot = None;
+      token = {
       lexeme = "y";
       literal = None;
       location = { line = 1; column = 0 };
       token_type = Lexer.Identifier;
-    }];
+    }}];
     arity = 2;
     body = []
   } in Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
@@ -190,11 +196,13 @@ let test_fibonacci_decl () = let open Lexer in let open Parser in
     FunctionDecl {
       name = "fib";
       params = [{
+        type_annot = None;
+        token = {
         lexeme = "n";
         literal = None;
         location = { line = 1; column = 0};
         token_type = Identifier;
-      }];
+      }}];
       arity = 1;
       body = []
     };

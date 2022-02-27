@@ -17,10 +17,11 @@ type expr =
   | Unit
   and literal = (string * literal_type)
 
+type func_param = { type_annot: string option; token: token }
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; expr: expr }
-  | FunctionDecl of { name: string; arity: int; params: token list; body: statement list }
+  | FunctionDecl of { name: string; arity: int; params: func_param list; body: statement list }
   | Print of expr
   | Return of { value: expr }
   
@@ -53,7 +54,7 @@ let rec print_stmt s = match s with
     | _ -> print_endline ("Expr " ^ string_of_expr e)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).lexeme; List.iter (fun s -> print_stmt s) f.body
+  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).token.lexeme; List.iter (fun s -> print_stmt s) f.body
   | Return _ -> print_endline "Return"
 
 let at_end t = List.length t = 0
@@ -110,7 +111,28 @@ and parse_params tokens = match tokens with
       | _ -> [h], r
     end
   | _ -> [], tokens
-
+and parse_func_decl_params tokens = match tokens with
+    | h :: r when h.token_type = Identifier -> (
+      match match_next r [Colon] with
+      | Some _ -> (
+        match (List.tl r) with
+        | t :: r when h.token_type = Identifier ->
+          let param = { type_annot = Some t.lexeme; token = h} in
+          let next, rem = parse_func_decl_params r in
+          [param] @ next, rem
+        | _ -> failwith "missing type annotation after colon"
+        )
+      | None -> (
+        let param = { type_annot = None; token = h} in
+        match match_next r [Comma] with
+          | Some _ ->
+            let next, rem = parse_func_decl_params (List.tl r) in
+            [param] @ next, rem
+          | _ -> [param], r
+      )
+    )
+    | h :: r when h.token_type = Comma -> parse_func_decl_params r
+    | _ -> [], tokens
 and parse_call tokens =
   let (expr, remaining) = parse_primary tokens in
   match match_next remaining [LeftParen] with
@@ -199,11 +221,11 @@ and parse_expression tokens = match tokens with
     parse_expression rest
   | _ -> parse_logical_or tokens
 
-and parse_function tokens : (statement list * token list * token list) =
+and parse_function tokens : (statement list * func_param list * token list) =
   match match_next tokens [LeftParen] with
   | Some _ -> begin
     let rest = List.tl tokens in    
-    let params, remaining = parse_params rest in
+    let params, remaining = parse_func_decl_params rest in
     (* List.iter print_token params;
     print_endline "remaining: ";
     List.iter print_token remaining; *)

@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[]) {
     int64_t result = init();
-    printf("Result_code: %lld\n", result);
-    return result;
+    // int32_t result = test();
+    // printf("result: %lld\n", result);
+    return 0;
 }

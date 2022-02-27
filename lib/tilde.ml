@@ -211,6 +211,12 @@ let tb_inst_cmp_ne = foreign "tb_inst_cmp_ne"
 let tb_inst_cmp_ilt = foreign "tb_inst_cmp_ilt"
   (ptr tb_function @-> int @-> int @-> bool @-> returning int)
 
+let tb_inst_sxt = foreign "tb_inst_sxt"
+  (ptr tb_function @-> int @-> tb_datatype @-> returning int)
+
+let tb_inst_zxt = foreign "tb_inst_zxt"
+  (ptr tb_function @-> int @-> tb_datatype @-> returning int)
+
 let tb_inst_and = foreign "tb_inst_and"
   (ptr tb_function @-> int @-> int @-> returning int)
 let tb_inst_or = foreign "tb_inst_or"
@@ -229,6 +235,8 @@ module DataType = struct
     dt
   
   let i8_dt   = create I8 0
+  let i16_dt   = create I16 0
+  let i32_dt   = create I32 0
   let i64_dt  = create I64 0
   let void_dt = create Void 0
   let bool_dt = create Bool 0
@@ -236,6 +244,8 @@ module DataType = struct
   let get_datatype = function
   | Void  -> void_dt
   | I64   -> i64_dt
+  | I32    -> i32_dt
+  | I16    -> i16_dt
   | I8    -> i8_dt
   | Bool  -> i8_dt
   | _     -> failwith "todo: implement datatype"

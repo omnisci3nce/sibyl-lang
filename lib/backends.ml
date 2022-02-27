@@ -184,9 +184,10 @@ module Tilde = struct
         let var = Hashtbl.find var_env v in
         print_string (string_of_value var);
         (* let _ = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in *)
-        let format_string = tb_inst_cstring fp "result %d\n\n" in
+        let format_string = tb_inst_cstring fp "result: %d\n\n" in
         let value = Inst.load fp I8 var.reg 4 in
-        let arr = make_params_array [format_string; value] in
+        let cast_to_i32 = tb_inst_zxt fp value (get_datatype I32) in
+        let arr = make_params_array [format_string; cast_to_i32] in
         let _ = tb_inst_ecall fp void_dt printf_handle 2 (Ctypes.CArray.start arr) in
         ()
       | _ -> failwith "todo"

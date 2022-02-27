@@ -17,6 +17,10 @@ type value = {
   reg: register
 }
 
+let string_of_value v = match v.typ with
+  | VBool -> "VBool"
+  | VInt -> "VInt"
+
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y.reg)
 
 let type_to_datatype = function
@@ -29,15 +33,18 @@ let type_to_tilde_type = function
   | None -> failwith "x64 backend needs type annotations currently"
 
 module Tilde = struct
-  let alloc_var fp env identifier =
+  let alloc_var fp env identifier typ =
     (* Create local *)
-    let reg = tb_inst_local fp 8 8 in
+    let size = match typ with
+      | VBool -> 1
+      | VInt -> 8 in 
+    let reg = tb_inst_local fp size size in
     (* Store *)
-    Hashtbl.add env identifier { typ = VInt; reg = reg };
+    Hashtbl.add env identifier { typ = typ; reg = reg };
     reg
 
   let gen_int_const fp x = Inst.i64 fp x
-  let gen_bool_const fp x = Inst.u8 fp (if x = true then 1 else 0)
+  let gen_bool_const fp x = Inst.boolean fp (if x = true then 1 else 0)
   let gen_add_op fp a b = Inst.add fp a b AssumeNSW
   let gen_sub_op fp a b = Inst.sub fp a b AssumeNSW
   let gen_mul_op fp a b = Inst.mul fp a b AssumeNSW
@@ -106,7 +113,12 @@ module Tilde = struct
         end
     | Var v ->
                 let value = Hashtbl.find var_env v in
-                let reg = Inst.load fp I64 value.reg 8 in
+                let ttype, _ = (
+                  match value.typ with
+                  | VBool -> I8, 1
+                  | VInt -> I64, 8
+                ) in
+                let reg = Inst.load fp ttype value.reg 4 in
                 { value with reg = reg} 
     | Call c -> (
         let ident = match c.callee with
@@ -114,8 +126,8 @@ module Tilde = struct
           | _ -> failwith "todo" in
         let args = List.map (fun arg -> let e = gen_from_expr fp func_env var_env arg in e.reg) c.arguments in 
         let arr = make_params_array args in
-        let function_pointer = Hashtbl.find func_env ident in
-        let result = tb_inst_call fp (get_datatype I64) function_pointer (List.length c.arguments) (Ctypes.CArray.start arr) in
+        let function_pointer, ttype = Hashtbl.find func_env ident in
+        let result = tb_inst_call fp (get_datatype ttype) function_pointer (List.length c.arguments) (Ctypes.CArray.start arr) in
         { typ = VInt; reg = result }
       )
     | Unit -> failwith "todo: Unit"
@@ -123,29 +135,40 @@ module Tilde = struct
   let rec gen_from_stmt fp func_env var_env = function
     | LetDecl ld ->
         (* Allocate variable *)
-        let name = alloc_var fp var_env ld.identifier in
+        let t = match ld.type_annot with
+          | Some "bool" -> VBool
+          | Some "int" -> VInt
+          | _ -> failwith "" in
+        let name = alloc_var fp var_env ld.identifier t in
         (* Evaluate *)
         let value = gen_from_expr fp func_env var_env ld.expr in
         (* Store *)
         let (dt, size) = type_to_tilde_type ld.type_annot in
+        print_string "SIZE: "; print_int size; print_newline ();
         let _ = Inst.store fp dt name value.reg size in
         ()
-    | FunctionDecl { name; arity; params; body } ->
-        let func_proto = Function.create g_module I64 arity in
+    | FunctionDecl { name; arity; params; return_type_annot; body } ->
+      let rtype, size = type_to_tilde_type return_type_annot in
+      print_string "SIZE: "; print_int size; print_newline ();
+        let func_proto = Function.create g_module rtype arity in
         List.iteri 
           (fun _ param ->
             let ttype, _ = type_to_tilde_type param.type_annot in
             let _ = function_add_param func_proto (get_datatype ttype) in ()
           ) params; 
         let func = Function.build g_module func_proto name  in
-        Hashtbl.add func_env name func;
+        Hashtbl.add func_env name (func, rtype);
 
         (* Add params into env  *)
         let scoped_env = Hashtbl.create (List.length params) in
 
         List.iteri (fun i param -> 
           let p_addr = tb_inst_param_addr func i in
-          let v = { typ = VInt; reg = p_addr } in
+          let typ = match param.type_annot with
+            | Some "int" -> VInt
+            | Some "bool" -> VBool
+            | _ -> failwith "function args need type annotations currently" in
+          let v = { typ; reg = p_addr } in
           Hashtbl.add scoped_env param.token.lexeme v
         ) params;
 
@@ -160,9 +183,10 @@ module Tilde = struct
       match e with
       | Var v ->
         let var = Hashtbl.find var_env v in
-        let (ttype, size) = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in
-        let format_string = (match ttype with | I64 -> tb_inst_cstring fp "result: %lld\n" | I8 -> tb_inst_cstring fp "result: %d\n" | _ -> failwith "cant print type") in
-        let value = Inst.load fp ttype var.reg size in
+        print_string (string_of_value var);
+        let (ttype, _) = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in
+        let format_string = (match ttype with | I64 -> tb_inst_cstring fp "result (I64): %lld\n" | I8 -> tb_inst_cstring fp "result (I8): %d\n" | _ -> failwith "cant print type") in
+        let value = Inst.load fp ttype var.reg 4 in
         let arr = make_params_array [format_string; value] in
         let _ = tb_inst_ecall fp void_dt printf_handle 2 (Ctypes.CArray.start arr) in
         ()
@@ -178,7 +202,7 @@ module Tilde = struct
   let codegen (ast: statement list) =
     (* Generate code for each statement *)
     let var_env = Hashtbl.create 10 in
-    let func_env : (string, function_t Ctypes.structure Ctypes_static.ptr) Hashtbl.t = Hashtbl.create 10 in
+    let func_env : (string, function_t Ctypes.structure Ctypes_static.ptr * type_t) Hashtbl.t = Hashtbl.create 10 in
     List.iter (fun stmt -> gen_from_stmt init_func func_env var_env stmt; ()) ast;
     let return_code = Inst.i64 init_func 0 in
     (* Return exit code from main function *)

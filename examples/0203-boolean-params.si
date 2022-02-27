@@ -1,4 +1,4 @@
-fn AND(left: bool, right: bool) {
+fn AND(left: bool, right: bool): bool {
     let result: bool = left && right
     return result
 }

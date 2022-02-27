@@ -1,4 +1,4 @@
-fn addTen(x: int) {
+fn addTen(x: int): int {
   let result: int = x + 10
   return result
 }

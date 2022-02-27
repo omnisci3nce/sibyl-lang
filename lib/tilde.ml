@@ -245,7 +245,7 @@ module Inst = struct
   
   let i64 fp x = tb_inst_sint fp i64_dt  (Signed.Int64.of_int x)
   let u8  fp x = tb_inst_uint fp i8_dt (Unsigned.UInt64.of_int x)
-  let boolean fp b = tb_inst_bool fp b
+  let boolean fp x = tb_inst_sint fp i8_dt (Signed.Int64.of_int x)
 
   let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
   let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)

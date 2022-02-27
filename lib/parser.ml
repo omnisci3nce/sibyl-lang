@@ -21,7 +21,7 @@ type func_param = { type_annot: string option; token: token }
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; type_annot: string option; expr: expr }
-  | FunctionDecl of { name: string; arity: int; params: func_param list; body: statement list }
+  | FunctionDecl of { name: string; arity: int; params: func_param list; return_type_annot: string option; body: statement list }
   | Print of expr
   | Return of { value: expr }
   
@@ -221,7 +221,7 @@ and parse_expression tokens = match tokens with
     parse_expression rest
   | _ -> parse_logical_or tokens
 
-and parse_function tokens : (statement list * func_param list * token list) =
+and parse_function tokens : (statement list * func_param list * string option * token list) =
   match match_next tokens [LeftParen] with
   | Some _ -> begin
     let rest = List.tl tokens in    
@@ -232,9 +232,13 @@ and parse_function tokens : (statement list * func_param list * token list) =
 
     match match_next remaining [RightParen] with
     | Some _ -> begin
-        (* function body *)
-        (* TODO: Move into its own top level function for parsing blocks *)
+        (* Return type annotation *)
         let rest = List.tl remaining in
+        let rest, return_type_annot = (match rest with
+        | { token_type = Colon; _ } :: rt :: after_rt when rt.token_type = Identifier -> after_rt, Some rt.lexeme
+        | _ -> rest, None) in
+        print_string (match return_type_annot with | Some "bool" -> "return bool" | _ -> "return unknown");
+        (* function body *)
         match match_next rest [LeftBrace] with
         | Some _ ->
           let statements = ref [] in
@@ -247,7 +251,7 @@ and parse_function tokens : (statement list * func_param list * token list) =
               parse_f_body rem
           ) in
           let rem = parse_f_body (List.tl rest) in
-          !statements, params, rem
+          !statements, params, return_type_annot, rem
         | None -> failwith "no function body"
       end
     | None -> failwith "parse arguments to be implemented"
@@ -270,8 +274,8 @@ and parse_statement tokens = match tokens with
     Print (expr), rem
   (* starts a function declaration statement *)
   | { token_type = Func; _} :: { token_type = Identifier; lexeme; _} :: rest ->
-    let body, params, remaining = parse_function rest in
-    FunctionDecl { name = lexeme; arity = List.length params; params = params; body = body }, remaining
+    let body, params, return_type_annot, remaining = parse_function rest in
+    FunctionDecl { name = lexeme; arity = List.length params; params = params; return_type_annot = return_type_annot; body = body }, remaining
   | { token_type = Return; _} :: rest ->
       let ex, rest = parse_expression rest in
       Return { value = ex }, rest

@@ -75,6 +75,7 @@ let test_declare_empty_function () =
     name = "hello";
     params = [];
     body = [];
+    return_type_annot = None;
     arity = 0;
   } in
   Alcotest.(check stmt_testable) "Correct function name" expected_output stmt
@@ -97,7 +98,8 @@ let test_one_statement_in_function () =
         type_annot = None;
         expr = Parser.IntConst 10
       }
-    ]
+    ];
+    return_type_annot = None
   } in
     Alcotest.(check stmt_testable) "Correct function body statement" expected_output stmt
   
@@ -150,7 +152,8 @@ let test_one_param_func () =
       token_type = Lexer.Identifier;
     }}];
     arity = 1;
-    body = []
+    body = [];
+    return_type_annot = None
   } in
     Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
@@ -178,7 +181,8 @@ let test_two_params_func () =
       token_type = Lexer.Identifier;
     }}];
     arity = 2;
-    body = []
+    body = [];
+    return_type_annot = None
   } in Alcotest.(check stmt_testable) "Correct function params" expected_output stmt
 
 let test_fibonacci_decl () = let open Lexer in let open Parser in
@@ -205,7 +209,8 @@ let test_fibonacci_decl () = let open Lexer in let open Parser in
         token_type = Identifier;
       }}];
       arity = 1;
-      body = []
+      body = [];
+      return_type_annot = None
     };
     LetDecl {
       identifier = "a";

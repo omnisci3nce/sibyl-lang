@@ -54,7 +54,7 @@ let rec print_stmt s = match s with
     | _ -> print_endline ("Expr " ^ string_of_expr e)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl f -> printf "FunctionDecl: %s %s\n" f.name (List.nth f.params 0).token.lexeme; List.iter (fun s -> print_stmt s) f.body
+  | FunctionDecl f -> printf "FunctionDecl: %s \n" f.name; List.iter (fun s -> print_stmt s) f.body
   | Return _ -> print_endline "Return"
 
 let at_end t = List.length t = 0
@@ -237,7 +237,7 @@ and parse_function tokens : (statement list * func_param list * string option * 
         let rest, return_type_annot = (match rest with
         | { token_type = Colon; _ } :: rt :: after_rt when rt.token_type = Identifier -> after_rt, Some rt.lexeme
         | _ -> rest, None) in
-        print_string (match return_type_annot with | Some "bool" -> "return bool" | _ -> "return unknown");
+        (* print_string (match return_type_annot with | Some "bool" -> "return bool" | _ -> "return unknown"); *)
         (* function body *)
         match match_next rest [LeftBrace] with
         | Some _ ->

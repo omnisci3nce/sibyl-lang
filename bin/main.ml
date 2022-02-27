@@ -3,7 +3,6 @@ open Sibyl.Lexer
 
 let run_file ~parse:only_parse filename =
   let source = filename |> read_whole_file in
-  (* let gen = Backends.Tilde.new_generator "output.js" in *)
   let ast = source
     |> Lexer.tokenise
     |> Parser.parse in

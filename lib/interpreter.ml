@@ -133,21 +133,22 @@ let clock: statement list = [
 ]
 
 let test_interpret () =
-  let var_env = Hashtbl.create 10 in
-  let func_env = Hashtbl.create 10 in
+  (* let var_env = Hashtbl.create 10 in
+  let func_env = Hashtbl.create 10 in *)
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  fn AND(left: bool, right: bool) {
-    let result = left && right
+  fn addTen(x: int): int {
+    let result: int = x + 10
     return result
-}
-let output = AND(true, false)
-print output
+  }
+  let output = addTen(5)
+  print output
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
-  let program = parse t in
-  List.iter (fun stmt ->
-    print_string "[Statement] "; print_stmt stmt; print_newline ();
+  let _ = parse t |> Typer.typecheck in
+  (* List.iter (fun stmt ->
+    (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
     let _ = evaluate_stmt func_env var_env stmt in ()
-  ) program
+  ) program *)
+    ()

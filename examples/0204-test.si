@@ -1,0 +1,7 @@
+fn testbools(): bool {
+  let a: bool = true
+  print a
+  return a
+}
+let res: bool = testbools()
+print res

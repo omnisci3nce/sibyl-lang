@@ -4,3 +4,4 @@ fn addTen(x: int): int {
 }
 let twenty: int = addTen(10)
 print twenty
+print twenty

@@ -24,7 +24,7 @@ let string_of_value v = match v.typ with
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y.reg)
 
 let type_to_datatype = function
-  | "bool" -> I8, 1
+  | "bool" -> I64, 8
   | "int"  -> I64, 8
   | _ -> failwith "unknown type"
 
@@ -33,18 +33,15 @@ let type_to_tilde_type = function
   | None -> failwith "x64 backend needs type annotations currently"
 
 module Tilde = struct
-  let alloc_var fp env identifier typ =
+  let alloc_var fp env identifier _ =
     (* Create local *)
-    let size = match typ with
-      | VBool -> 1
-      | VInt -> 8 in 
-    let reg = tb_inst_local fp size size in
+    let reg = tb_inst_local fp 8 8 in
     (* Store *)
-    Hashtbl.add env identifier { typ = typ; reg = reg };
+    Hashtbl.add env identifier { typ = VInt; reg = reg };
     reg
 
   let gen_int_const fp x = Inst.i64 fp x
-  let gen_bool_const fp x = Inst.boolean fp (if x = true then 1 else 0)
+  let gen_bool_const fp x = Inst.u8 fp (if x = true then 1 else 0)
   let gen_add_op fp a b = Inst.add fp a b AssumeNSW
   let gen_sub_op fp a b = Inst.sub fp a b AssumeNSW
   let gen_mul_op fp a b = Inst.mul fp a b AssumeNSW
@@ -113,12 +110,12 @@ module Tilde = struct
         end
     | Var v ->
                 let value = Hashtbl.find var_env v in
-                let ttype, _ = (
+                (* let ttype, size = (
                   match value.typ with
-                  | VBool -> I8, 1
+                  | VBool -> I8, 8
                   | VInt -> I64, 8
-                ) in
-                let reg = Inst.load fp ttype value.reg 4 in
+                ) in *)
+                let reg = Inst.load fp I64 value.reg 8 in
                 { value with reg = reg} 
     | Call c -> (
         let ident = match c.callee with
@@ -127,6 +124,7 @@ module Tilde = struct
         let args = List.map (fun arg -> let e = gen_from_expr fp func_env var_env arg in e.reg) c.arguments in 
         let arr = make_params_array args in
         let function_pointer, ttype = Hashtbl.find func_env ident in
+        if ttype = I64 then print_string "EYE 64" else print_string "NO BRO";
         let result = tb_inst_call fp (get_datatype ttype) function_pointer (List.length c.arguments) (Ctypes.CArray.start arr) in
         { typ = VInt; reg = result }
       )
@@ -184,9 +182,9 @@ module Tilde = struct
       | Var v ->
         let var = Hashtbl.find var_env v in
         print_string (string_of_value var);
-        let (ttype, _) = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in
-        let format_string = (match ttype with | I64 -> tb_inst_cstring fp "result (I64): %lld\n" | I8 -> tb_inst_cstring fp "result (I8): %d\n" | _ -> failwith "cant print type") in
-        let value = Inst.load fp ttype var.reg 4 in
+        (* let _ = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in *)
+        let format_string = tb_inst_cstring fp "result (I64): %lld\n" in
+        let value = Inst.load fp I64 var.reg 8 in
         let arr = make_params_array [format_string; value] in
         let _ = tb_inst_ecall fp void_dt printf_handle 2 (Ctypes.CArray.start arr) in
         ()

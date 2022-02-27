@@ -4,7 +4,7 @@ echo "Sibyl compiler test suite"
 echo "============================="
 
 echo "Parse Tests"
-for i in *.pa ; do
+for i in *.si ; do
   /usr/bin/printf "%.4s... " $i
   ../_build/default/bin/main.exe -parse $i > /dev/null 2>&1
   # $? = 0

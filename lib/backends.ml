@@ -19,6 +19,15 @@ type value = {
 
 let print_hashtbl = Hashtbl.iter (fun x y -> Printf.printf "%s -> %d\n" x y.reg)
 
+let type_to_datatype = function
+  | "bool" -> I8, 1
+  | "int"  -> I64, 8
+  | _ -> failwith "unknown type"
+
+let type_to_tilde_type = function
+  | Some t -> type_to_datatype t
+  | None -> failwith "x64 backend needs type annotations currently"
+
 module Tilde = struct
   let alloc_var fp env identifier =
     (* Create local *)
@@ -118,13 +127,15 @@ module Tilde = struct
         (* Evaluate *)
         let value = gen_from_expr fp func_env var_env ld.expr in
         (* Store *)
-        let _ = Inst.store fp I64 name value.reg 8 in
+        let (dt, size) = type_to_tilde_type ld.type_annot in
+        let _ = Inst.store fp dt name value.reg size in
         ()
     | FunctionDecl { name; arity; params; body } ->
         let func_proto = Function.create g_module I64 arity in
         List.iteri 
-          (fun _ _ ->
-            let _ = function_add_param func_proto (DataType.get_datatype I64) in ()
+          (fun _ param ->
+            let ttype, _ = type_to_tilde_type param.type_annot in
+            let _ = function_add_param func_proto (get_datatype ttype) in ()
           ) params; 
         let func = Function.build g_module func_proto name  in
         Hashtbl.add func_env name func;
@@ -148,9 +159,10 @@ module Tilde = struct
     | Print e -> (
       match e with
       | Var v ->
-        let format_string = tb_inst_cstring fp "result: %lld\n" in
         let var = Hashtbl.find var_env v in
-        let value = Inst.load fp I64 var.reg 8 in
+        let (ttype, size) = type_to_datatype (match var.typ with | VBool -> "bool" | VInt -> "int") in
+        let format_string = (match ttype with | I64 -> tb_inst_cstring fp "result: %lld\n" | I8 -> tb_inst_cstring fp "result: %d\n" | _ -> failwith "cant print type") in
+        let value = Inst.load fp ttype var.reg size in
         let arr = make_params_array [format_string; value] in
         let _ = tb_inst_ecall fp void_dt printf_handle 2 (Ctypes.CArray.start arr) in
         ()

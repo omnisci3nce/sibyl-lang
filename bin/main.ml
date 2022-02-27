@@ -8,7 +8,7 @@ let run_file ~parse:only_parse filename =
     |> Lexer.tokenise
     |> Parser.parse in
   if not only_parse then
-    (* let _ = ast |> Backends.Tilde.codegen in *)
+    let _ = ast |> Backends.Tilde.codegen in
     ()
   else
     List.iter Parser.print_stmt ast

@@ -20,7 +20,7 @@ type expr =
 type func_param = { type_annot: string option; token: token }
 type statement =
   | Expression of expr
-  | LetDecl of { identifier: string; expr: expr }
+  | LetDecl of { identifier: string; type_annot: string option; expr: expr }
   | FunctionDecl of { name: string; arity: int; params: func_param list; body: statement list }
   | Print of expr
   | Return of { value: expr }
@@ -258,7 +258,10 @@ and parse_statement tokens = match tokens with
   (* starts a let statement *)
   | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Equal; _} :: rest ->
     let ex, remaining_t = parse_expression rest in
-      LetDecl { identifier = lexeme; expr = ex}, remaining_t
+      LetDecl { identifier = lexeme; type_annot = None; expr = ex}, remaining_t
+  | { token_type = Let; _ } :: { token_type = Identifier; lexeme; _} :: { token_type = Colon; _} :: t :: { token_type = Equal; _} :: rest when t.token_type = Identifier ->
+    let ex, remaining_t = parse_expression rest in
+      LetDecl { identifier = lexeme; type_annot = Some t.lexeme; expr = ex}, remaining_t
   (* starts a print statement *)
   | { token_type = Identifier; lexeme = "print"; _} :: ({ token_type = Identifier; _} as v) :: rest ->
     Print (Var v.lexeme), rest

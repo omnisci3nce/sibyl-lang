@@ -94,6 +94,7 @@ let test_one_statement_in_function () =
     body = [
       Parser.LetDecl {
         identifier = "a";
+        type_annot = None;
         expr = Parser.IntConst 10
       }
     ]
@@ -208,6 +209,7 @@ let test_fibonacci_decl () = let open Lexer in let open Parser in
     };
     LetDecl {
       identifier = "a";
+      type_annot = None;
       expr = Call {
         callee = Var "a";
         arguments = [
@@ -248,6 +250,7 @@ let test_if_else () = let open Lexer in let open Parser in
   let expected = [
     LetDecl {
       identifier = "x";
+      type_annot = None;
       expr = IfElse {
         condition = Binary {
           left_expr = IntConst 5;

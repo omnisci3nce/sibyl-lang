@@ -190,6 +190,9 @@ let tb_inst_sint = foreign "tb_inst_sint"
 let tb_inst_uint = foreign "tb_inst_uint"
   (ptr tb_function @-> tb_datatype @-> Ctypes.uint64_t @-> returning int)
 
+let tb_inst_bool = foreign "tb_inst_bool"
+  (ptr tb_function @-> Ctypes.bool @-> returning int)
+
 let tb_inst_add = foreign "tb_inst_add"
   (ptr tb_function @-> int @-> int @-> int @-> returning int)
 let tb_inst_sub = foreign "tb_inst_sub"
@@ -228,11 +231,13 @@ module DataType = struct
   let i8_dt   = create I8 0
   let i64_dt  = create I64 0
   let void_dt = create Void 0
+  let bool_dt = create Bool 0
 
   let get_datatype = function
   | Void  -> void_dt
   | I64   -> i64_dt
   | I8    -> i8_dt
+  | Bool  -> bool_dt
   | _     -> failwith "todo: implement datatype"
 end
 module Inst = struct
@@ -240,6 +245,7 @@ module Inst = struct
   
   let i64 fp x = tb_inst_sint fp i64_dt  (Signed.Int64.of_int x)
   let u8  fp x = tb_inst_uint fp i8_dt (Unsigned.UInt64.of_int x)
+  let boolean fp b = tb_inst_bool fp b
 
   let add fp a b arith_behav =  tb_inst_add fp a b (int_of_arithmatic_behaviour arith_behav)
   let sub fp a b arith_behav = tb_inst_sub fp a b (int_of_arithmatic_behaviour arith_behav)

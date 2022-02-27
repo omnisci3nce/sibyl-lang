@@ -1,6 +1,6 @@
 fn addTen(x: int) {
-  let result = x + 10
+  let result: int = x + 10
   return result
 }
-let twenty = addTen(10)
+let twenty: int = addTen(10)
 print twenty

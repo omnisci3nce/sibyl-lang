@@ -1,6 +1,6 @@
-fn add(x, y, z) {
-  let result = x + y + z
+fn add(x: int, y: int, z: int) {
+  let result: int = x + y + z
   return result
 }
-let sum = add(21, 25, 50)
+let sum: int = add(21, 25, 50)
 print sum

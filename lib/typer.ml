@@ -38,6 +38,12 @@ let rec type_of env = function
     and right_type = type_of env right_expr in
     if left_type != right_type then raise (TypeError "binary op types mismatch")
     else left_type
+  | Grouping g -> type_of env g.expr
+  | IfElse { then_branch; else_branch; _ } ->
+    let then_type = type_of env then_branch
+    and else_type = type_of env else_branch in
+    if then_type != else_type then raise (TypeError "return type of then and else branches must match")
+    else then_type
   | _ -> failwith "yeah nah"
 
 let unwrap_opt = function

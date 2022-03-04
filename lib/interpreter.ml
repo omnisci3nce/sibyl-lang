@@ -133,18 +133,24 @@ let clock: statement list = [
 ]
 
 let test_interpret () =
-  (* let var_env = Hashtbl.create 10 in
-  let func_env = Hashtbl.create 10 in *)
+  let var_env = Hashtbl.create 10 in
+  let func_env = Hashtbl.create 10 in
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  let output: int = true 
-  print output
+  fn ageInSeconds(yearsOld: int): int {
+    let result: int = 365 * 24 * 60
+    return result
+  }
+
+  let me: int = ageInSeconds(24)
+  print me
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
-  let _ = parse t |> Typer.typecheck in
-  (* List.iter (fun stmt ->
+  (* let _ = parse t |> Typer.typecheck in *)
+  let program = parse t in
+  List.iter (fun stmt ->
     (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
     let _ = evaluate_stmt func_env var_env stmt in ()
-  ) program *)
+  ) program;
     ()

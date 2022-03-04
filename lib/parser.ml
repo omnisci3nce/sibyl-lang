@@ -68,7 +68,7 @@ let match_next tokens (token_types: token_type list) = match tokens with
   end
 
 let rec parse_primary tokens =
-  (* print_string "\nparse primary: "; List.iter print_token tokens ; *)
+  print_string "\nparse primary: "; List.iter print_token tokens ;
   match tokens with
   | h :: r  when h.token_type = Number -> 
     let i = begin match Option.get h.literal with
@@ -159,7 +159,7 @@ and parse_factor tokens =
   let (expr, remaining) = parse_unary tokens in
   match match_next remaining [Star; Slash] with
   | Some t ->
-    let (ex, rem) = parse_unary (List.tl remaining) in
+    let (ex, rem) = parse_factor (List.tl remaining) in
     Binary { left_expr = expr; operator = t; right_expr = ex }, rem
   | _ -> (expr, remaining)
     

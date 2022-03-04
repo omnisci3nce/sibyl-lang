@@ -138,7 +138,7 @@ let test_interpret () =
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
   fn ageInSeconds(yearsOld: int): int {
-    let result: int = 365 * 24 * 60
+    let result: int = yearsOld * 365 * 24 * 60
     return result
   }
 

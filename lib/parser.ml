@@ -68,7 +68,7 @@ let match_next tokens (token_types: token_type list) = match tokens with
   end
 
 let rec parse_primary tokens =
-  print_string "\nparse primary: "; List.iter print_token tokens ;
+  (* print_string "\nparse primary: "; List.iter print_token tokens ; *)
   match tokens with
   | h :: r  when h.token_type = Number -> 
     let i = begin match Option.get h.literal with

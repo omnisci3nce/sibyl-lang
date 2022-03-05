@@ -38,6 +38,16 @@ let test_call_type () =
   " in
   let _ = typecheck_from_source source in ()
 
+let test_return_type () =
+  let source = "
+  fn add(x: int, y: int): bool {
+    return x + y
+  }\n" in
+  Alcotest.(check_raises) "should raise TypeError"
+    (Typer.TypeError "Return expression type must match function return type annotation")
+    (fun _ -> let _ = typecheck_from_source source in ())
+
+
 let () =
   let open Alcotest in
   run "Typer Tests" [

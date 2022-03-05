@@ -103,7 +103,7 @@ let typecheck (prog: program) : program =
       if rt = (unwrap_opt !current_func_return_type) then
         let _ = current_func_return_type := None in
         env
-      else failwith "Return type must match function return annotation"
+      else failwith "Return expression type must match function return type annotation"
       
     | _ -> env
   in

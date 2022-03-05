@@ -140,7 +140,7 @@ let test_interpret () =
   fn add(x: int, y: int): bool {
     return x + y
   }
-  let x: int = add(5, true)
+  let x: int = add(5, 5)
   print x
 " in
 

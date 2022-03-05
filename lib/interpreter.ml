@@ -137,13 +137,16 @@ let test_interpret () =
   let func_env = Hashtbl.create 10 in
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  let x = 5
+  fn add(x: int, y: int): int {
+    return x + y
+  }
+  let x: bool = add(5, 5)
   print x
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)
   (* let _ = parse t |> Typer.typecheck in *)
-  let program = parse t in
+  let program = parse t |> Typer.typecheck in
   List.iter (fun stmt ->
     (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
     let _ = evaluate_stmt func_env var_env stmt in ()

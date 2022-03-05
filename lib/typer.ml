@@ -42,6 +42,10 @@ let rec typeof env = function
     and else_type = typeof env else_branch in
     if then_type != else_type then raise (TypeError "return type of then and else branches must match")
     else then_type
+  | Call c -> begin match c.callee with
+              | Var s -> StaticEnv.lookup env s
+              | _ -> failwith "todo"
+              end
   | _ -> failwith "TODO: implement typeof for this expression type"
 
 and typeof_binop env op e1 e2 = let open Lexer in
@@ -73,7 +77,9 @@ let typecheck (prog: program) : program =
       if expr_type != annotated_type then raise (TypeError "let decl type mismatch")
       else new_env
       
-    | FunctionDecl _ -> env
+    | FunctionDecl f ->
+        let annotated_type = type_annot_to_typ (unwrap_opt f.return_type_annot) in
+        StaticEnv.extend env f.name annotated_type
     | _ -> env
   in
   let _ = List.fold_left check_stmt (StaticEnv.empty) prog in

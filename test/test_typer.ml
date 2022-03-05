@@ -29,6 +29,15 @@ let test_ifelse_cond_is_bool () =
   let source = "let a: bool = if (5 + 5) then true else false\n" in
   Alcotest.(check_raises) "should raise TypeError" (Typer.TypeError "if/else condition must be of type bool") (fun _ -> let _ = typecheck_from_source source in ())
 
+let test_call_type () =
+  let source = "
+  fn add(x: int, y: int): int {
+    return x + y
+  }
+  let a: int = add(5, 5)
+  " in
+  let _ = typecheck_from_source source in ()
+
 let () =
   let open Alcotest in
   run "Typer Tests" [
@@ -39,5 +48,6 @@ let () =
       test_case "let declaration types match with if/else expr" `Quick test_let_decl_type_with_ifelse;
       test_case "if else branch types match" `Quick test_ifelse_type_mismatch;
       test_case "if else condition type is bool" `Quick test_ifelse_cond_is_bool;
+      test_case "function call type" `Quick test_call_type;
     ]
   ]

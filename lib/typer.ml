@@ -35,12 +35,15 @@ let rec typeof env = function
   | Var s -> StaticEnv.lookup env s
   | Binary { left_expr; right_expr; operator; _ } -> typeof_binop env operator left_expr right_expr
   | Grouping g -> typeof env g.expr
-  | IfElse { then_branch; else_branch; _ } ->
+  | Logical l -> typeof_logical env l.left_expr l.right_expr
+  | IfElse { condition; then_branch; else_branch } ->
+    let _ = match typeof env condition with | TBool -> () | _ -> raise (TypeError "if/else condition must be of type bool") in
     let then_type = typeof env then_branch
     and else_type = typeof env else_branch in
     if then_type != else_type then raise (TypeError "return type of then and else branches must match")
     else then_type
-  | _ -> failwith "yeah nah"
+  | _ -> failwith "TODO: implement typeof for this expression type"
+
 and typeof_binop env op e1 e2 = let open Lexer in
   let t1, t2 = typeof env e1, typeof env e2 in
   match op.token_type, t1, t2 with
@@ -49,6 +52,10 @@ and typeof_binop env op e1 e2 = let open Lexer in
   | Star, TInt, TInt
   | Slash, TInt, TInt -> TInt
   | _ -> failwith "dunno"
+
+and typeof_logical env e1 e2 =
+  let t1, t2 = typeof env e1, typeof env e2 in
+  if t1 = TBool && t2 = TBool then TBool else failwith "both sides of logical operator must be Bool type"
 
 let unwrap_opt = function
   | Some v -> v
@@ -62,7 +69,7 @@ let typecheck (prog: program) : program =
     | LetDecl { identifier; type_annot; expr; _ } ->
       let annotated_type = type_annot_to_typ (unwrap_opt type_annot) in
       let new_env = StaticEnv.extend env identifier annotated_type in
-      let expr_type = type_of new_env expr in
+      let expr_type = typeof new_env expr in
       if expr_type != annotated_type then raise (TypeError "let decl type mismatch")
       else new_env
       

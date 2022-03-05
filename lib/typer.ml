@@ -29,22 +29,26 @@ let type_annot_to_typ = function
   | "int"  -> TInt
   | _ -> failwith "unknown type annotation"
 
-let rec type_of env = function
+let rec typeof env = function
   | Bool _ -> TBool
   | IntConst _ -> TInt
   | Var s -> StaticEnv.lookup env s
-  | Binary { left_expr; right_expr; _ } ->
-    let left_type = type_of env left_expr
-    and right_type = type_of env right_expr in
-    if left_type != right_type then raise (TypeError "binary op types mismatch")
-    else left_type
-  | Grouping g -> type_of env g.expr
+  | Binary { left_expr; right_expr; operator; _ } -> typeof_binop env operator left_expr right_expr
+  | Grouping g -> typeof env g.expr
   | IfElse { then_branch; else_branch; _ } ->
-    let then_type = type_of env then_branch
-    and else_type = type_of env else_branch in
+    let then_type = typeof env then_branch
+    and else_type = typeof env else_branch in
     if then_type != else_type then raise (TypeError "return type of then and else branches must match")
     else then_type
   | _ -> failwith "yeah nah"
+and typeof_binop env op e1 e2 = let open Lexer in
+  let t1, t2 = typeof env e1, typeof env e2 in
+  match op.token_type, t1, t2 with
+  | Plus, TInt, TInt
+  | Minus, TInt, TInt
+  | Star, TInt, TInt
+  | Slash, TInt, TInt -> TInt
+  | _ -> failwith "dunno"
 
 let unwrap_opt = function
   | Some v -> v

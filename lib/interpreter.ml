@@ -137,13 +137,8 @@ let test_interpret () =
   let func_env = Hashtbl.create 10 in
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  fn ageInSeconds(yearsOld: int): int {
-    let result: int = yearsOld * 365 * 24 * 60
-    return result
-  }
-
-  let me: int = ageInSeconds(24)
-  print me
+  let x = 5
+  print x
 " in
 
   (* printf "Tokens: \n"; List.iter Lexer.print_token t; print_newline (); *)

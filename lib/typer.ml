@@ -29,6 +29,10 @@ let type_annot_to_typ = function
   | "int"  -> TInt
   | _ -> failwith "unknown type annotation"
 
+let print_type = function
+  | TBool -> print_string "Bool"
+  | TInt -> print_string "int"
+
 let rec typeof env = function
   | Bool _ -> TBool
   | IntConst _ -> TInt
@@ -65,11 +69,13 @@ let unwrap_opt = function
   | Some v -> v
   | None -> failwith "cooked"
 
+let current_func_return_type = ref None
+
 let typecheck (prog: program) : program =
   (* let check_expr env expr = match expr with
     | _ -> let _ = type_of env expr in env
   in *)
-  let check_stmt env stmt = match stmt with
+  let rec check_stmt env stmt = match stmt with
     | LetDecl { identifier; type_annot; expr; _ } ->
       let annotated_type = type_annot_to_typ (unwrap_opt type_annot) in
       let new_env = StaticEnv.extend env identifier annotated_type in
@@ -79,9 +85,35 @@ let typecheck (prog: program) : program =
       
     | FunctionDecl f ->
         let annotated_type = type_annot_to_typ (unwrap_opt f.return_type_annot) in
+        print_type annotated_type;
+        current_func_return_type := Some annotated_type;
+
+        let func_env = List.fold_left (fun env param -> 
+          let t = type_annot_to_typ (unwrap_opt param.type_annot) in
+          StaticEnv.extend env param.token.lexeme t
+          ) (StaticEnv.empty) f.params in
+          
+        let _ = List.fold_left check_stmt func_env f.body in
+
         StaticEnv.extend env f.name annotated_type
+
+    | Return r ->
+      let rt = typeof env r.value in
+      print_type rt;
+      if rt = (unwrap_opt !current_func_return_type) then
+        let _ = current_func_return_type := None in
+        env
+      else failwith "Return type must match function return annotation"
+      
     | _ -> env
   in
   let _ = List.fold_left check_stmt (StaticEnv.empty) prog in
   (* List.iter (fun stmt -> check_stmt prog; *)
   prog
+
+
+(* Example:
+    x + 1 : int
+    x : int
+*)
+(* let infer (expr: expr) : typ = *)

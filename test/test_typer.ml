@@ -27,7 +27,9 @@ let test_ifelse_type_mismatch () =
 
 let test_ifelse_cond_is_bool () =
   let source = "let a: bool = if (5 + 5) then true else false\n" in
-  Alcotest.(check_raises) "should raise TypeError" (Typer.TypeError "if/else condition must be of type bool") (fun _ -> let _ = typecheck_from_source source in ())
+  Alcotest.(check_raises) "should raise TypeError"
+    (Typer.TypeError "if/else condition must be of type bool")
+    (fun _ -> ignore (typecheck_from_source source))
 
 let test_call_type () =
   let source = "
@@ -36,7 +38,7 @@ let test_call_type () =
   }
   let a: int = add(5, 5)
   " in
-  let _ = typecheck_from_source source in ()
+  ignore (typecheck_from_source source)
 
 let test_return_type () =
   let source = "
@@ -45,7 +47,7 @@ let test_return_type () =
   }\n" in
   Alcotest.(check_raises) "should raise TypeError"
     (Typer.TypeError "Return expression type must match function return type annotation")
-    (fun _ -> let _ = typecheck_from_source source in ())
+    (fun _ -> ignore (typecheck_from_source source))
 
 
 let () =

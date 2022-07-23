@@ -76,6 +76,7 @@ module Make (CG : CodeGenerator) = struct
       end
       | _ -> print_string "HERE"; print_newline ();  failwith "todo : implement this operator for binary expression"
     end
+    | IntConst x -> gen, (string_of_int x)
     | e -> printf "%s \n" (string_of_expr e);
         failwith "todo: handle this expression in generator"
 

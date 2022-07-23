@@ -46,7 +46,7 @@ let new_generator_ filename extension =
 (* Target platform agnostic helpers *)
 let emit str gen =
   gen.instruction_count <- gen.instruction_count + 1;
-  gen.instructions <- gen.instructions ^ "  " ^ str ^ "\n";
+  gen.instructions <- gen.instructions ^ str ^ "\n";
   gen
 
 let bottom_var g = Hashtbl.fold (fun _ v c -> if v >= c then (v+8) else c) g.variables 0

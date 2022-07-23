@@ -42,7 +42,10 @@ module CodeGen : CodeGenerator = struct
     in (name, off)
   let gen_print var gen = emit ("console.log(" ^ var ^ ")") gen
   let gen_copy_ident target name gen = gen |> emit ("const " ^ target ^ " = " ^ name)
-  let gen_assign target str gen = gen |> emit (target ^ " = " ^ str)
+  let gen_assign target str gen = 
+    if Hashtbl.mem gen.variables target then emit ("const " ^ target ^ " = " ^ str) gen
+    else emit (target ^ " = " ^ str) gen
+
   let gen_def_function name args body (gen: generator) =
     let arg_str = (List.nth args 0).lexeme in
     gen |> emit ("function " ^ name ^ "(" ^ arg_str  ^ ") {\n" ^ body ^ "\n}\n")

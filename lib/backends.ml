@@ -17,9 +17,9 @@ module Make (CG : CodeGenerator) = struct
           gen, name
         | IntConst a, Var b ->
           let temp_name, _ = alloc_temp_var gen in
-          let new_gen = gen_copy_ident temp_name (var gen b) gen in
-          let (name, _offset) = gen_plus_op (string_of_int a) (var new_gen temp_name) new_gen in
-          new_gen, name
+          let _ = gen_copy_ident temp_name (var gen b) gen in
+          let (name, _offset) = gen_plus_op (string_of_int a) (var gen temp_name) gen in
+          gen, name
 
         (* Num + Expr *)
         | IntConst a, e ->
@@ -85,7 +85,7 @@ module Make (CG : CodeGenerator) = struct
       (* TODO: Handle all arguments *)
       let new_gen, tmp_name = gen_from_expr gen (List.nth c.arguments 0) in
       let temp_name, _ = alloc_temp_var new_gen in
-      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident tmp_name) new_gen in
+      let _ = gen_copy_ident temp_name (sprintf "%s(%s)" ident tmp_name) new_gen in
       new_gen, temp_name
     | e -> printf "%s \n" (string_of_expr e);
         failwith ("todo: handle " ^ (string_of_expr_type e) ^ "expression in generator")
@@ -101,17 +101,17 @@ module Make (CG : CodeGenerator) = struct
         in begin match e.expr with
         | IntConst x -> 
             let (new_gen, _) = gen_from_expr gen e.expr in
-            let new_gen = gen_assign e.identifier (string_of_int x) new_gen in
+            let _ = gen_assign e.identifier (string_of_int x) new_gen in
             new_gen
         | _ -> 
             (* Compute what we want to store in it *)
             let (new_gen, name) = gen_from_expr gen e.expr in
-            let new_gen = gen_assign e.identifier name new_gen in
+            let _ = gen_assign e.identifier name new_gen in
             new_gen
         end
         | Print e -> begin
           match e with
-          | Var v -> gen_print v gen
+          | Var v -> let _ =  gen_print v gen in gen
           | _ -> gen
         end
      | FunctionDecl f ->
@@ -142,11 +142,11 @@ module Make (CG : CodeGenerator) = struct
         inner next rest
     in
     let final = inner gen ast in
-    let output = generate_begin ^ generate_entrypoint ^  final.instructions ^ generate_end ^ generate_exit in
+    let output = gen_begin ^ gen_entrypoint ^  final.instructions ^ gen_end ^ gen_exit in
     output
 end
 
 module JS = Make (Js_backend.CodeGen)
-module X64 = Make (X64_backend.CodeGen)
+(* module X64 = Make (X64_backend.CodeGen) *)
 (* module C = Make (Dummy_backend.CodeGen) *)
 (* module Tilde = Make (Tilde_backend.CodeGen) *)

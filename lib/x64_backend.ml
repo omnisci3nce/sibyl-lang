@@ -1,4 +1,4 @@
-open Codegen
+(* open Codegen
 
 module CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ".s"
@@ -76,4 +76,4 @@ module CodeGen : CodeGenerator = struct
     |> emit ("mov qword " ^ var gen target ^ ", " ^ str) (* only dealing with 64 bit data types for now *)
 
   let gen_def_function _ _ _ (g: generator) = g
-end
+end *)

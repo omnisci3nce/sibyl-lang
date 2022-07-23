@@ -1,8 +1,8 @@
 (* TODO: use this approach https://blog.janestreet.com/simple-top-down-development-in-ocaml/ *)
 
-open Codegen
+(* open Codegen *)
 
-module CodeGen : CodeGenerator = struct
+(* module CodeGen : CodeGenerator = struct
   let new_generator filename = new_generator_ filename ""
   let close_generator g = close_out g.channel
   let generate_begin = failwith "Unimplemented"
@@ -20,4 +20,4 @@ module CodeGen : CodeGenerator = struct
   let gen_copy_ident _target _name _gen = failwith "Unimplemented"
   let gen_assign _target _str _gen = failwith "Unimplemented"
   let gen_def_function _name _args _body _gen = failwith "Unimplemented"
-end
+end *)

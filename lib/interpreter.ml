@@ -137,7 +137,7 @@ let test_interpret () =
   let func_env = Hashtbl.create 10 in
   (* Hashtbl.add func_env "clock" ([], clock); *)
   let t = Lexer.tokenise "
-  fn add(x: int, y: int): bool {
+  fn add(x: int, y: int): int {
     return x + y
   }
   let x: int = add(5, 5)

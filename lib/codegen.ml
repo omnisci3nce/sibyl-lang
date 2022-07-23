@@ -68,7 +68,3 @@ let alloc_temp_var g =
     temp_v_counter := !temp_v_counter + 1;
     Logs.debug (fun m -> m "[Codegen] Allocating temp variable '%s' at offset %d" var_name available);
     Hashtbl.add g.variables var_name available; (var_name, available)
-
-
-(* Target platforms that I'd like to support *)
-(* type target = AMD64 | AARCH_64 | RISCV | JS | WASM  *)

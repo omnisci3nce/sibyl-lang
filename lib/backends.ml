@@ -120,4 +120,5 @@ end
 
 module JS = Make (Js_backend.CodeGen)
 module X64 = Make (X64_backend.CodeGen)
+(* module C = Make (Dummy_backend.CodeGen) *)
 (* module Tilde = Make (Tilde_backend.CodeGen) *)

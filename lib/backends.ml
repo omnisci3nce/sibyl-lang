@@ -72,13 +72,23 @@ module Make (CG : CodeGenerator) = struct
           let (new_gen, temp_name) = gen_from_expr gen e in
           let instr =  sprintf "%s < %s" (var new_gen temp_name) (string_of_int a) in
           new_gen, instr
-        | _ -> failwith "sdsdsdsd"
+        | _ -> failwith "Cant compare against non integer constant"
       end
-      | _ -> print_string "HERE"; print_newline ();  failwith "todo : implement this operator for binary expression"
+      | t -> failwith ("todo : implement '" ^ t.lexeme ^ "' operator for binary expression")
     end
     | IntConst x -> gen, (string_of_int x)
+    | Var s -> gen, s
+    | Call c -> 
+      let ident = match c.callee with
+      | Var s -> s
+      | _ -> failwith "rip" in
+      (* TODO: Handle all arguments *)
+      let new_gen, tmp_name = gen_from_expr gen (List.nth c.arguments 0) in
+      let temp_name, _ = alloc_temp_var new_gen in
+      let new_gen = gen_copy_ident temp_name (sprintf "%s(%s)" ident tmp_name) new_gen in
+      new_gen, temp_name
     | e -> printf "%s \n" (string_of_expr e);
-        failwith "todo: handle this expression in generator"
+        failwith ("todo: handle " ^ (string_of_expr_type e) ^ "expression in generator")
 
   and gen_from_stmt gen (ast: statement) = match ast with
     | LetDecl e ->
@@ -104,6 +114,23 @@ module Make (CG : CodeGenerator) = struct
           | Var v -> gen_print v gen
           | _ -> gen
         end
+     | FunctionDecl f ->
+      let dummy_generator = new_generator "functiondecl.js" in
+      let rec inner gen stmts = match stmts with
+      | [] -> gen
+      | s :: rest ->
+        let next = gen_from_stmt gen s in
+        inner next rest
+      in
+      let final = inner dummy_generator f.body in
+      let body_instructions = final.instructions in
+      let args = List.map (fun param -> param.token) f.params in
+      let new_gen = gen_def_function f.name args body_instructions gen in
+      new_gen
+    | Return r -> 
+      let dummy_generator = new_generator "functiondecl.js" in
+      let g, return_str = gen_from_expr dummy_generator r.value in
+      emit (sprintf "%s\n return %s" g.instructions return_str) gen
     | s -> print_stmt s; failwith "todo: handle this statement in generator"
 
   and codegen gen (ast: statement list) : string = 

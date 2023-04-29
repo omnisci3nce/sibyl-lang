@@ -45,13 +45,17 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
         match e.operator.token_type with
         | Plus -> Int (a + b)
         | Star -> Int (a * b)
+        | Slash -> Int (a / b)
         | Minus -> Int (a - b)
         | EqualEqual -> Bool (a = b)
         | LessThan -> Bool (a < b)
         | LesserEqual -> Bool (a <= b)
         | GreaterThan -> Bool (a > b)
         | GreaterEqual -> Bool (a >= b)
-        | _ -> failwith "operator"
+        | _ -> failwith (sprintf "Unsupported Binary operator with left: %s right: %s "
+                        (string_of_value left )
+                        (string_of_value right )
+        )
       )
     | Bool a, Bool b -> (
         match e.operator.token_type with
@@ -151,4 +155,13 @@ let test_interpret () =
     (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
     let _ = evaluate_stmt func_env var_env stmt in ()
   ) program;
+    ()
+
+let interpret ast =
+  let var_env = Hashtbl.create 10 in
+  let func_env = Hashtbl.create 10 in
+  List.iter (fun stmt ->
+    print_string "[Statement] "; print_stmt stmt; print_newline ();
+    let _ = evaluate_stmt func_env var_env stmt in ()
+  ) ast;
     ()

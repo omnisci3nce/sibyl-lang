@@ -1,7 +1,0 @@
-fn ageInSeconds(yearsOld: int): int {
-  let result: int = yearsOld * 365 * 24 * 60
-  return result
-}
-
-let me: int = ageInSeconds(24)
-print me

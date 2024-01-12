@@ -1,9 +1,9 @@
-(* Parse tokens from the lexer for syntax correctness and convert to an abstract syntax tree *)
+(** Parse tokens from the lexer for syntax correctness and converts them into an abstract syntax tree *)
 
 open Lexer
 open Printf
 
-(* Types *)
+(** Expressions - things which can be evaluated to *)
 type expr =
   | IntConst of int
   | Bool of bool
@@ -18,13 +18,18 @@ type expr =
   and literal = (string * literal_type)
 
 type func_param = { type_annot: string option; token: token }
+
+(** Statements - modify the environment or control flow *)
 type statement =
   | Expression of expr
   | LetDecl of { identifier: string; type_annot: string option; expr: expr }
   | FunctionDecl of { name: string; arity: int; params: func_param list; return_type_annot: string option; body: statement list }
   | Print of expr
   | Return of { value: expr }
-  
+
+(** A "program" is just a list of statements to be executed, inside which various 
+    expressions will be evaluated. The overall program itself though has no output
+    and could be considered to return Unit *)
 type program = statement list
 
 exception Syntax_error of string
@@ -54,8 +59,14 @@ let rec print_stmt s = match s with
     | _ -> print_endline ("Expr " ^ string_of_expr e)
   end
   | LetDecl a -> print_endline "Let"; print_string (string_of_expr a.expr)
-  | FunctionDecl f -> printf "FunctionDecl: %s \n" f.name; List.iter (fun s -> print_stmt s) f.body
-  | Return _ -> print_endline "Return"
+  | FunctionDecl f -> begin
+      printf "FunctionDecl: %s : " f.name;
+      List.iter (fun s -> Printf.printf "%s:%s -> " s.token.lexeme (Option.value s.type_annot ~default:"")) f.params;
+      printf "%s" (Option.get f.return_type_annot);
+      print_newline ();
+      List.iter (fun s -> print_stmt s) f.body
+    end
+  | Return r -> printf "Return: %s" (string_of_expr r.value)
 
 let at_end t = List.length t = 0
 
@@ -80,16 +91,12 @@ let rec parse_primary tokens =
   | h :: r when h.token_type = LeftParen ->
     begin
       let (expr, remaining) = parse_expression r in
-      (* print_endline (string_of_expr expr);
-      print_endline "Remaining: "; *)
-      (* List.iter print_token remaining; *)
       match remaining with
       | h :: r when h.token_type = RightParen -> Grouping { expr = expr }, r
       | _ -> failwith "right paren expected"
     end
   | h :: r when h.token_type = True -> Bool true, r
   | h :: r when h.token_type = False -> Bool false, r
-  (* | _ :: r -> Unit, r *)
   | _ -> failwith " stuck"
 
 and parse_argument (args: expr list ) tokens =
@@ -139,9 +146,6 @@ and parse_call tokens =
   (* We have an opening parenthesis next so we know it's a function call *)
   | Some _ -> (
     let args, remaining = parse_argument [] (List.tl remaining) in
-    (* print_newline ();
-    print_string "args tokens: "; *)
-    (* List.iter print_token remaining; *)
     match match_next remaining [RightParen] with
       | Some _ -> Call { callee = expr; arguments = args }, List.tl remaining
       | None -> failwith "closing parenthesis expected"
@@ -226,9 +230,6 @@ and parse_function tokens : (statement list * func_param list * string option * 
   | Some _ -> begin
     let rest = List.tl tokens in    
     let params, remaining = parse_func_decl_params rest in
-    (* List.iter print_token params;
-    print_endline "remaining: ";
-    List.iter print_token remaining; *)
 
     match match_next remaining [RightParen] with
     | Some _ -> begin
@@ -237,7 +238,6 @@ and parse_function tokens : (statement list * func_param list * string option * 
         let rest, return_type_annot = (match rest with
         | { token_type = Colon; _ } :: rt :: after_rt when rt.token_type = Identifier -> after_rt, Some rt.lexeme
         | _ -> rest, None) in
-        (* print_string (match return_type_annot with | Some "bool" -> "return bool" | _ -> "return unknown"); *)
         (* function body *)
         match match_next rest [LeftBrace] with
         | Some _ ->
@@ -283,11 +283,9 @@ and parse_statement tokens = match tokens with
     match match_next rest [LeftParen] with
     | Some _ ->  (
       let _condition, rem = parse_expression (List.tl rest) in
-      (* print_string "Condition "; print_endline (string_of_expr condition); *)
       match match_next rem [RightParen] with
       | Some _ -> (
         let _then_branch, rem = parse_statement (List.tl rem) in
-        (* print_string "Then branch "; print_stmt then_branch; *)
         match match_next rem [Else] with
         | Some _ -> 
           let else_branch, rem = parse_statement (List.tl rem) in

@@ -12,15 +12,6 @@ Currently I'm learning about compilers via Crafting Interpreters and then applyi
 
 ## Backends
 
-In order from most complete to least complete
-
-1. Interpreter (in OCaml)
-1. JavaScript
-1. x64 Assembly
-1. ARM Assembly (not started)
-1. WASM (not started)
-1. Bytecode (not started)
-
 ## Vague Roadmap
 
 - [x] Booleans & Ints

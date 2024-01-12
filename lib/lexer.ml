@@ -1,4 +1,4 @@
-(* Convert a source code file into tokens *)
+(** Converts a source code file into tokens *)
 
 type token_type =
   (* single char tokens *)
@@ -97,8 +97,8 @@ let str_of_token t = Printf.sprintf "%s at line/col %d/%d" (str_of_token_type t.
     
 type lexer_context = {
   source: string;
-  start: int;   (* first character in the lexeme being scanned *)
-  current: int; (* character currently being considered *)
+  start: int;   (** first character in the lexeme being scanned *)
+  current: int; (** character currently being considered *)
   line: int;
 }
 

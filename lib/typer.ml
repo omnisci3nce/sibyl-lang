@@ -85,7 +85,7 @@ let typecheck (prog: program) : program =
       
     | FunctionDecl f ->
         let annotated_type = type_annot_to_typ (unwrap_opt f.return_type_annot) in
-        print_type annotated_type;
+        (* print_type annotated_type; *)
         current_func_return_type := Some annotated_type;
 
         let func_env = List.fold_left (fun env param -> 
@@ -99,7 +99,7 @@ let typecheck (prog: program) : program =
 
     | Return r ->
       let rt = typeof env r.value in
-      print_type rt;
+      (* print_type rt; *)
       if rt = (unwrap_opt !current_func_return_type) then
         let _ = current_func_return_type := None in
         env

@@ -1,7 +1,0 @@
-fn celcToFahren(celsius: int): int {
-  let result: int = celsius * 2 + 32 //should be 1.8 instead of 2
-  return result
-}
-
-let today: int = celcToFahren(11)
-print today

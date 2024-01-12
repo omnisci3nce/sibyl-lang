@@ -46,6 +46,19 @@ let rec string_of_expr e = match e with
     | Call _ -> "Call"
     | Unit -> "Unit"
 
+let string_of_expr_type e = match e with
+  | IntConst _ -> "IntConst" 
+    | Bool _ -> "Bool"
+    | Binary _ -> "Binary" 
+    | Logical _ -> "Logical"
+    | Unary _ -> "Unary"
+    | Grouping _ -> "Grouping"
+    | Var _ -> "Var"
+    | IfElse _ -> "IfElse"
+    | Call _ -> "Call"
+    | Unit -> "Unit"
+
+
 let rec print_stmt s = match s with
   | Expression e ->
     begin

@@ -8,9 +8,11 @@ The goals are for Sibyl to be:
 - Flexible and modular - Module system
 - Simple - Few syntactic structures
 
-Currently I'm learning about compilers via Crafting Interpreters and then applying what I learn to Sibyl as well as any additional information I learn from other sources such as books, Reddit, Youtube, and on the ProgrammingLanguages Discord.
+Currently I'm learning about compilers via Crafting Interpreters and then applying what I learn to Sibyl as well as any additional information I learn from other sources such as books, Reddit, and Youtube.
 
-## Backends
+## Dependencies
+
+`nasm`
 
 ## Vague Roadmap
 

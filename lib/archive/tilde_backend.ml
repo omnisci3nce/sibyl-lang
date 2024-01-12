@@ -1,7 +1,6 @@
 open Tilde
-open Tilde.DataType
-open Lexer
 open Parser
+open DataType
 
 (* Global context *)
 let g_module = Module.create Architecture.X86_64 TargetSystem.Windows
@@ -32,7 +31,7 @@ let type_to_tilde_type = function
   | Some t -> get_tb_type t
   | None -> failwith "x64 backend needs type annotations currently"
 
-module Tilde = struct
+module CodeGen = struct
   let alloc_var fp t env identifier =
     (* Create local *)
     let _, size = get_tb_type t in

@@ -1,9 +1,10 @@
 (** Evaluate Sibyl code with OCaml *)
+(** Evaluate Sibyl code with OCaml *)
 
 open Parser
 open Printf
 
-(* OCaml Runtime Values *)
+(** OCaml runtime representations of sibyl primitive values *)
 type value =
   Int of int
   | Bool of bool
@@ -69,7 +70,7 @@ let rec evaluate func_env var_env (expr: expr) = match expr with
       let args_length = List.length c.arguments in
       let name = begin match c.callee with
       | Var v -> v
-      | _ -> failwith "Call callee has to be Var expression (I think)" 
+      | _ -> raise (RuntimeError "Call callee has to be Var expression")
       end in
       let (args, body) = try Hashtbl.find func_env name with
                           Not_found -> failwith (sprintf "Couldn't find function '%s'" name) in
@@ -152,7 +153,7 @@ let test_interpret () =
   (* let _ = parse t |> Typer.typecheck in *)
   let program = parse t |> Typer.typecheck in
   List.iter (fun stmt ->
-    (* print_string "[Statement] "; print_stmt stmt; print_newline (); *)
+    print_string "[Statement] "; print_stmt stmt; print_newline ();
     let _ = evaluate_stmt func_env var_env stmt in ()
   ) program;
     ()
@@ -165,3 +166,17 @@ let interpret ast =
     let _ = evaluate_stmt func_env var_env stmt in ()
   ) ast;
     ()
+
+(* The above would look like in C (using my custom typedefs for int types):
+
+i32 add(i32 x, i32 y) {
+  return x + y;
+}
+
+int main() {
+  i32 x = add(5, 5);
+  printf("%d\n", x);
+  return 0;
+}
+...
+*)

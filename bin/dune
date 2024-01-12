@@ -1,5 +1,5 @@
 (executable
  (name main)
- (libraries sibyl cinterop experiment logs)
+ (libraries sibyl cinterop logs)
  ; (foreign_archives ../deps/tb/tb)
 )

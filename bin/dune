@@ -3,3 +3,8 @@
  (name main)
  (libraries sibyl logs)
 )
+
+(executable
+    (name example)
+    (libraries sibyl)
+)

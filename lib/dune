@@ -1,5 +1,6 @@
 (library
- (name sibyl))
+ (name sibyl)
+ (libraries containers))
 
 (menhir
  (modules parser))

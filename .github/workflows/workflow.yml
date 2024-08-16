@@ -1,6 +1,6 @@
 name: Main workflow
 
-on: 
+on:
   push:
     branches:
       - master
@@ -19,7 +19,7 @@ jobs:
           - ubuntu-latest
           # - windows-latest
         ocaml-compiler:
-          - 4.13.x
+          - 5.2.x
 
     runs-on: ${{ matrix.os }}
 

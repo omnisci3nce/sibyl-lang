@@ -1,7 +1,7 @@
 (executable
  (public_name sibyl)
  (name main)
- (libraries sibyl logs)
+ (libraries sibyl)
 )
 
 (executable

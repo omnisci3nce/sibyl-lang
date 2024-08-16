@@ -1,6 +1,0 @@
-fn AND(left: bool, right: bool): bool {
-    let result: bool = left && right
-    return result
-}
-let output: bool = AND(true, false)
-print output

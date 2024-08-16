@@ -1,7 +1,0 @@
-fn fib(n: int): int {
-    let a: int = if (n < 2) then n
-            else fib(n - 1) + fib(n - 2)
-    return a
-  }
-let a: int = fib(20)
-print a

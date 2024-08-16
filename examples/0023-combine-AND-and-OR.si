@@ -1,4 +1,0 @@
-let result1 = if ((false || true) && false) then 5 else 10
-let result2 = if ((false || true) || false) then 5 else 10
-print result1 // should print 10
-print result2 // should print 5

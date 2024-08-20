@@ -7,7 +7,7 @@
 %token Eof
 %token Newline
 %token Let
-%token Fn
+%token FuncDecl
 
 %token False
 %token True
@@ -56,6 +56,14 @@ stmt:
         loc = $startpos;
         var_name = var_name;
         bindee = bound_expr
+      }
+    }
+  | FuncDecl; func_name = Ident; LParen; RParen; LBrace; body = list(stmt); RBrace
+    { FuncDecl {
+        loc = $startpos;
+        func_name = func_name;
+        arity = 0;
+        body = body
       }
     }
 

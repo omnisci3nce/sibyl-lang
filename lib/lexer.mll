@@ -31,6 +31,7 @@ rule read =
   | "then" { Then }
   | "else" { Else }
   | "print" { Print }
+  | "return" { Return }
   | "fn" { FuncDecl }
   | ident { Ident (Lexing.lexeme lexbuf) }
   | '=' { Equal }

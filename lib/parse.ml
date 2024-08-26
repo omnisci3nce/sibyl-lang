@@ -19,18 +19,22 @@ let parse_program lexbuf =
 
 open Ast
 
-let string_of_expr expr = match expr with Int i -> "Int " ^ string_of_int i | _ -> failwith "TODO"
+let string_of_expr expr =
+  match expr with Int i -> "Int " ^ string_of_int i | _ -> failwith "TODO: string_of_expr"
 
-let rec string_of_stmt stmt =
+let string_of_stmt stmt =
   match stmt with
   | Let s -> Printf.sprintf "(%d) Let %s = %s" s.loc.pos_lnum s.var_name (string_of_expr s.bindee)
-  | FuncDecl func ->
-      let stmts = func.body |> List.map string_of_stmt |> List.map (fun s -> "  " ^ s) in
-      Printf.sprintf "(%d) Func %s\n%s\n" func.loc.pos_lnum func.func_name
-        (String.concat " \n" stmts)
+  | Return { value } -> Printf.sprintf "Return %s" (string_of_expr value)
   | _ -> failwith "TODO"
 
 let print_ast prog =
   List.iter
-    (fun toplevel -> match toplevel with Stmt stmt -> print_endline (string_of_stmt stmt))
+    (fun toplevel ->
+      match toplevel with
+      | Stmt stmt -> print_endline (string_of_stmt stmt)
+      | FuncDecl func ->
+          let stmts = func.body |> List.map string_of_stmt |> List.map (fun s -> "  " ^ s) in
+          Printf.printf "(%d) Func %s\n%s\n" func.loc.pos_lnum func.func_name
+            (String.concat " \n" stmts))
     prog

@@ -15,6 +15,7 @@
 %token Then
 %token Else
 %token Print
+%token Return
 %token <string> Ident
 %token <int> Int
 %token <float> F32
@@ -58,6 +59,13 @@ stmt:
         bindee = bound_expr
       }
     }
+  | Return; return_expr = expr
+    {
+        Return { value = return_expr }
+    }
+
+toplevel_item:
+  | stmt = stmt { Stmt stmt }
   | FuncDecl; func_name = Ident; LParen; RParen; LBrace; body = list(stmt); RBrace
     { FuncDecl {
         loc = $startpos;
@@ -66,9 +74,6 @@ stmt:
         body = body
       }
     }
-
-toplevel_item:
-  | stmt = stmt { Stmt stmt }
 
 prog:
   | prog = separated_list(Newline, toplevel_item); Eof { prog }

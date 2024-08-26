@@ -12,11 +12,12 @@ type expr =
 
 and stmt =
   | Let of { loc : loc; var_name : string; bindee : expr }
-  | FuncDecl of { loc : loc; func_name : string; arity : int; body : stmt list }
   | Expression of expr
   | Return of { value : expr }
   | DebugPrint of expr  (** Prints out all internal compiler knowledge about an expr at runtime *)
 
-and toplevel_item = Stmt of stmt
+and toplevel_item =
+  | Stmt of stmt
+  | FuncDecl of { loc : loc; func_name : string; arity : int; body : stmt list }
 
 type program = toplevel_item list

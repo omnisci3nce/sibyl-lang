@@ -30,6 +30,7 @@
 %token Comma
 %token Colon
 %token Semicolon
+%token Tilde
 %token Plus
 %token Minus
 %token Star
@@ -50,6 +51,9 @@
 
 expr:
   | i = Int; { Int i }
+  | Tilde; e = expr { UnaryOp { rhs = e; operator = Complement } }
+  | Minus; e = expr { UnaryOp { rhs = e; operator = Negate } }
+  | LParen; e = expr; RParen { e }
 
 stmt:
   | Let; var_name = Ident; Equal; bound_expr = expr

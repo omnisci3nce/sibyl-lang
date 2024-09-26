@@ -10,6 +10,11 @@ The goals are for Sibyl to be:
 
 Currently I'm learning about compilers via Crafting Interpreters and then applying what I learn to Sibyl as well as any additional information I learn from other sources such as books, Reddit, and Youtube.
 
+Compiling on Mac and running using Rosetta
+
+`clang -arch x86_64 example.s -o example_x86`
+`./example_x86`
+
 ## Dependencies
 
 `nasm`

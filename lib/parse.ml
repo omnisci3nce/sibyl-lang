@@ -19,8 +19,13 @@ let parse_program lexbuf =
 
 open Ast
 
-let string_of_expr expr =
-  match expr with Int i -> "Int " ^ string_of_int i | _ -> failwith "TODO: string_of_expr"
+let string_of_unary = function Complement -> "Complement" | Negate -> "Negate"
+
+let rec string_of_expr expr =
+  match expr with
+  | Int i -> "Int " ^ string_of_int i
+  | UnaryOp { rhs; operator = op } -> string_of_unary op ^ " " ^ string_of_expr rhs
+  | _ -> failwith "TODO: string_of_expr"
 
 let string_of_stmt stmt =
   match stmt with
@@ -35,6 +40,5 @@ let print_ast prog =
       | Stmt stmt -> print_endline (string_of_stmt stmt)
       | FuncDecl func ->
           let stmts = func.body |> List.map string_of_stmt |> List.map (fun s -> "  " ^ s) in
-          Printf.printf "(%d) Func %s\n%s\n" func.loc.pos_lnum func.func_name
-            (String.concat " \n" stmts))
+          Printf.printf "Func %s\n%s\n" func.func_name (String.concat " \n" stmts))
     prog

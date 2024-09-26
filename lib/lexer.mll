@@ -45,6 +45,7 @@ rule read =
   | ',' { Comma }
   | ':' { Colon }
   | ';' { Semicolon }
+  | '~' { Tilde }
   | '+' { Plus }
   | '-' { Minus }
   | '*' { Star }

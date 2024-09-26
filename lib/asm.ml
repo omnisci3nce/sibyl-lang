@@ -43,7 +43,7 @@ let string_of_operand = function
   | Imm i -> "Imm " ^ string_of_int i
   | Register _ -> "Register"
   | Pseudo id -> "Pseudo " ^ id
-  | Stack n -> "Stack " ^ string_of_int n ^ "bytes"
+  | Stack n -> "Stack " ^ string_of_int n
 
 let string_of_unary = function Neg -> "Neg" | Not -> "Not"
 

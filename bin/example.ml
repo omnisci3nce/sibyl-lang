@@ -25,6 +25,8 @@ let () =
         | Function { ident = _; body } -> List.fold_left ArmCG.convert_tac_instr [] body
       in
       List.iter (fun i -> Asm.string_of_instr i |> print_endline) asm;
+      let asm = ArmCG.pseudo_to_stack_offsets asm in
+      List.iter (fun i -> Asm.string_of_instr i |> print_endline) asm;
       ()
       (* let asm_ast = Codegen.emit_asm tac_ast in*)
       (* List.iter (ArmCG.emit_function stderr) asm_ast*)

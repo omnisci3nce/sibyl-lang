@@ -1,14 +1,13 @@
 open Ast
 open Asm
 
-let temp_id = ref 0
+let next_tmp =
+  let id = ref 0 in
+  fun () ->
+    let tmp = "_tmp" ^ string_of_int !id in
+    incr id;
+    tmp
 
-let next_id () =
-  let i = !temp_id in
-  temp_id := !temp_id + 1;
-  i
-
-let next_tmp () = "_tmp" ^ string_of_int (next_id ())
 let gen_unary = function Ast.Complement -> ThreeAddr.Complement | Ast.Negate -> ThreeAddr.Negate
 
 let rec gen_expr expr instrs =
@@ -44,22 +43,7 @@ end
 let fix_function_name name = if Sys.unix then "_" ^ name else name
 
 (* module X86_64 : Target = struct
-     (* let show_operand op = match op with Asm.Imm i -> Printf.sprintf "$%d" i | Asm.Register -> "%eax"*)
-
-     let emit_instr chan inst =
-       match inst with
-       | Asm.Ret -> Printf.fprintf chan "\tretq\n"
-       | Asm.Mov (src, dst) ->
-           Printf.fprintf chan "\tmovl %s, %s" (show_operand src) (show_operand dst)
-
-     (* let emit_function chan (fn_def : Asm.function_def) =
-        let fn_name = fix_function_name fn_def.name in
-        Printf.fprintf chan "_globl %s\n%s:\n" fn_name fn_name;
-        List.iter
-          (fun instr ->
-            emit_instr chan instr;
-            print_newline ())
-          fn_def.instructions*)
+   (* TODO: Fix x64 *)
    end*)
 
 module Arm64 : Target = struct
@@ -77,14 +61,11 @@ module Arm64 : Target = struct
   let _emit_epilogue _inst = failwith "TODO"
 
   let emit_instr chan inst =
-    let open Asm in
     match inst with
     | Ret -> fprintf chan "\tret\n"
     | Unary (_inst, _operand) -> ()
     | Mov (src, dst) -> fprintf chan "\t mov %s, %s" (show_operand dst) (show_operand src)
     | AllocateStack _ -> failwith ""
-  (* | AsmRet -> fprintf chan "\tret\n"
-     | Asm.Mov (src, dst) -> fprintf chan "\t mov %s, %s" (show_operand dst) (show_operand src)*)
 end
 
 module CodeEmitter (T : Target) = struct
@@ -108,12 +89,36 @@ module CodeEmitter (T : Target) = struct
     in
     env @ instructions
 
-  (* let emit_function chan (fn_def : function_def) =
-     let fn_name = fix_function_name fn_def.ident in
-     Printf.fprintf chan "_globl %s\n%s:\n" fn_name fn_name;
-     List.iter
-       (fun instr ->
-         T.emit_instr chan instr;
-         print_newline ())
-       fn_def.body*)
+  (** Replace [Pseudo] with stack pointer offsets  *)
+  let pseudo_to_stack_offsets insts =
+    let pseudo_map = Hashtbl.create 10 in
+    let stack_size = ref 0 in
+    let replace_if_pseudo operand =
+      match operand with
+      | Pseudo id ->
+          let offset =
+            match Hashtbl.find_opt pseudo_map id with
+            | Some i -> i
+            | None ->
+                stack_size := !stack_size + 4;
+                Hashtbl.add pseudo_map id !stack_size;
+                !stack_size
+          in
+          Stack offset
+      | _ -> operand
+    in
+    let replace_in_instruction = function
+      | Mov (src, dst) -> Mov (replace_if_pseudo src, replace_if_pseudo dst)
+      | Unary (u, dst) -> Unary (u, replace_if_pseudo dst)
+      | other -> other
+    in
+    List.map replace_in_instruction insts
+
+  let emit_function chan (fn_def : function_def) =
+    let fn_name = fix_function_name fn_def.ident in
+    Printf.fprintf chan "_globl %s\n%s:\n" fn_name fn_name;
+    fn_def.body
+    |> List.concat_map (convert_tac_instr [])
+    |> pseudo_to_stack_offsets
+    |> List.map (T.emit_instr chan)
 end

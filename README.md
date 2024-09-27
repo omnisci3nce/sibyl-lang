@@ -13,6 +13,11 @@ Currently I'm learning about compilers via Crafting Interpreters and then applyi
 Compiling on Mac and running using Rosetta
 
 `clang -arch x86_64 example.s -o example_x86`
+
+on mac
+
+`dune exec bin/example.exe 2> program.s && clang -arch arm64 program.s -o program`
+
 `./example_x86`
 
 ## Dependencies

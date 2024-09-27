@@ -25,7 +25,7 @@ let gen_stmt stmt =
   | Return { value } ->
       let v, instrs = gen_expr value [] in
       List.rev (ThreeAddr.Return v :: instrs)
-  | _ -> failwith ""
+  | _ -> failwith "fdd"
 
 let gen_toplevel_item = function
   | Stmt _s -> failwith "brah"
@@ -49,23 +49,32 @@ let fix_function_name name = if Sys.unix then "_" ^ name else name
 module Arm64 : Target = struct
   open Printf
 
-  let show_reg = function AX -> "x0" | R10 -> "x10"
+  let show_reg = function ReturnReg -> "x0" | ScratchReg -> "x10"
 
   let show_operand op =
     match op with
     | Asm.Imm i -> sprintf "#%d" i
     | Asm.Register r -> show_reg r
     | Pseudo ident -> ident
-    | Stack _i -> "TODO"
+    | Stack i -> sprintf "[sp, #%d]" i
 
+  let _emit_prologue _inst = failwith "TODO"
   let _emit_epilogue _inst = failwith "TODO"
 
   let emit_instr chan inst =
     match inst with
     | Ret -> fprintf chan "\tret\n"
-    | Unary (_inst, _operand) -> ()
-    | Mov (src, dst) -> fprintf chan "\t mov %s, %s" (show_operand dst) (show_operand src)
-    | AllocateStack _ -> failwith ""
+    | Unary (Not, _op) -> () (* fprintf chan "\tmvn %s\n" (show_operand op) *)
+    | Unary (Neg, _op) -> ()
+    | Mov (Register r, op) -> (* Store operation *) fprintf chan "\tstr %s, %s\n" (show_reg r) (show_operand op)
+    | Mov (op, Register r) -> (* Load operation *) fprintf chan "\tldr %s, %s\n" (show_reg r) (show_operand op)
+    | Mov (Stack _, Stack _) -> failwith "We cant move between two stack memory offsets"
+    | Mov (Imm c, Stack i) -> 
+        fprintf chan "\tmov %s, %s\n" (show_reg ScratchReg) ("#" ^ (string_of_int c));
+        fprintf chan "\tstr %s, %s\n" (show_reg ScratchReg) (show_operand (Stack i))
+
+    | Mov (o1, o2) -> printf "cant mov %s %s\n" (show_operand o1) (show_operand o2) ; failwith "Unhandled Mov type"
+    | AllocateStack n -> fprintf chan "\tsub sp, sp, #%d\n" n
 end
 
 module CodeEmitter (T : Target) = struct
@@ -82,29 +91,26 @@ module CodeEmitter (T : Target) = struct
   let convert_tac_instr env inst =
     let instructions =
       match inst with
-      | Return v -> [ Asm.Mov (convert_value v, Asm.Register AX); Asm.Ret ]
+      | Return v -> [ Asm.Mov (convert_value v, Asm.Register ReturnReg); Asm.Ret ]
       | Unary { op; src; dst } ->
           let dst_reg = convert_value dst in
           [ Asm.Mov (convert_value src, dst_reg); Asm.Unary (convert_unary_op op, dst_reg) ]
     in
     env @ instructions
 
-  (** Replace [Pseudo] with stack pointer offsets  *)
+  (** Replace [Pseudo] operands with stack pointer offsets  *)
   let pseudo_to_stack_offsets insts =
     let pseudo_map = Hashtbl.create 10 in
     let stack_size = ref 0 in
     let replace_if_pseudo operand =
       match operand with
-      | Pseudo id ->
-          let offset =
-            match Hashtbl.find_opt pseudo_map id with
-            | Some i -> i
-            | None ->
-                stack_size := !stack_size + 4;
-                Hashtbl.add pseudo_map id !stack_size;
-                !stack_size
-          in
-          Stack offset
+      | Pseudo id -> (
+          match Hashtbl.find_opt pseudo_map id with
+          | Some i -> Stack i
+          | None ->
+              stack_size := !stack_size + 4;
+              Hashtbl.add pseudo_map id !stack_size;
+              Stack !stack_size)
       | _ -> operand
     in
     let replace_in_instruction = function
@@ -112,13 +118,28 @@ module CodeEmitter (T : Target) = struct
       | Unary (u, dst) -> Unary (u, replace_if_pseudo dst)
       | other -> other
     in
-    List.map replace_in_instruction insts
+    let stackified = List.map replace_in_instruction insts in
+    (stackified, !stack_size)
 
-  let emit_function chan (fn_def : function_def) =
+  let instruction_fixup (insts, stack_size) =
+    let rewrite_invalid_mov inst = match inst with
+    | Mov (Stack a, Stack b) -> [
+      (* First move source stack addr into register, then move register into dest stack addr *)
+      Mov (Stack a, Register ScratchReg);
+      Mov (Register ScratchReg, Stack b)
+    ]
+    | other -> [other] (* Otherwise just return hte instruction *) in
+
+    AllocateStack stack_size :: (List.concat_map rewrite_invalid_mov insts)
+
+  let emit_function chan (fn_def : ThreeAddr.function_def) : Asm.function_def=
     let fn_name = fix_function_name fn_def.ident in
-    Printf.fprintf chan "_globl %s\n%s:\n" fn_name fn_name;
-    fn_def.body
+    Printf.fprintf chan ".globl %s\n%s:\n" fn_name fn_name;
+    let instrs = fn_def.body
     |> List.concat_map (convert_tac_instr [])
-    |> pseudo_to_stack_offsets
-    |> List.map (T.emit_instr chan)
+    |> pseudo_to_stack_offsets |> instruction_fixup
+    |> List.map (fun inst -> T.emit_instr chan inst; inst) 
+   in
+    { name = fn_name; instructions = instrs}
+
 end

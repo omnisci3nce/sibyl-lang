@@ -22,7 +22,7 @@ module ThreeAddr = struct
 end
 
 type identifier = string
-type reg = AX | R10
+type reg =  ReturnReg | ScratchReg
 type unary_inst = Neg | Not
 
 type operand =

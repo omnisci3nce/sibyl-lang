@@ -42,10 +42,6 @@ end
 
 let fix_function_name name = if Sys.unix then "_" ^ name else name
 
-(* module X86_64 : Target = struct
-   (* TODO: Fix x64 *)
-   end*)
-
 module Arm64 : Target = struct
   open Printf
 
@@ -75,6 +71,12 @@ module Arm64 : Target = struct
 
     | Mov (o1, o2) -> printf "cant mov %s %s\n" (show_operand o1) (show_operand o2) ; failwith "Unhandled Mov type"
     | AllocateStack n -> fprintf chan "\tsub sp, sp, #%d\n" n
+end
+
+module X86_64 : Target = struct
+  (* open Printf *)
+
+   let emit_instr _chan _inst = failwith "TODO"
 end
 
 module CodeEmitter (T : Target) = struct
